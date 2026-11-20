@@ -1,0 +1,13 @@
+{
+  "name": "yubaiwan-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "于百万 · 工作台门户（工具总览 + 统一登录 + 账号管理）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

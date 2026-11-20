@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>于百万·QSC管理系统 · 清洁报告</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    [hidden] { display: none !important; }
+    .daily-edit .topbar, .daily-edit .date-bar { background: #FBF7EF; }
+    .daily-edit .nav-date, .daily-edit #dateInput { min-height: 44px; }
+    .daily-edit .nav-date { min-width: 44px; }
+    .daily-edit .summary { padding: 14px 16px; }
+    .daily-edit .daily-progress { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .daily-edit .progress-text { gap: 8px; align-items: baseline; margin-bottom: 0; }
+    .daily-edit .daily-progress #progressText { color: var(--accent); font-size: 20px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .daily-edit #nextIncomplete { min-height: 44px; padding-inline: 12px; white-space: normal; }
+    .daily-edit .check-item { border-radius: 10px; scroll-margin: 72px 0 100px; }
+    .daily-edit .check-head { align-items: baseline; }
+    .daily-edit .check-name { margin: 0; font-size: 17px; color: var(--ink-900); }
+    .daily-edit .check-name:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .daily-edit .check-body { padding-left: 0; margin-top: 0; }
+    .daily-edit .compare { margin-top: 12px; }
+    .daily-edit .compare-label { font-size: 13px; }
+    .daily-edit .std-thumb, .daily-edit .std-add, .daily-edit .std-empty { aspect-ratio: 4 / 3; max-height: 190px; min-height: 76px; }
+    .daily-edit .std-add span, .daily-edit .std-note, .daily-edit .std-empty { font-size: 13px; }
+    .daily-edit .act-col .std-add { flex-direction: row; gap: 8px; color: var(--accent); border-color: var(--accent); background: var(--accent-weak); }
+    .daily-edit .act-col .std-add:disabled { cursor: wait; opacity: .65; }
+    .daily-edit .std-thumb .edit, .daily-edit .photo-retry { min-height: 44px; min-width: 44px; }
+    .daily-edit .photo-status { margin: 4px 0 0; color: var(--ink-700); font-size: 13px; }
+    .daily-edit .photo-error, .daily-edit .field-error { color: #9B2634; font-size: 13px; }
+    .daily-edit .daily-completion { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); margin-top: 12px; padding: 6px 9px 0 0; }
+    .daily-edit .daily-completion > label:first-child { flex: 1; }
+    .daily-edit .cleaner-field { margin: 12px 0 0; }
+    .daily-edit .cleaner-field label, .daily-edit .field-label { display: block; margin-bottom: 4px; }
+    .daily-edit .text-input { min-height: 44px; font-size: 16px; }
+    .daily-edit #inspector { scroll-margin: 72px 0 180px; }
+    .daily-edit #inspector[aria-invalid="true"] { border-color: #9B2634; }
+    .daily-edit .save-bar { flex-wrap: wrap; z-index: 5; background: var(--surface); box-shadow: 0 -4px 16px rgba(63, 33, 22, .07); }
+    .daily-edit .save-bar .btn-ghost { flex: 0 0 88px; }
+    .daily-edit .save-message { flex: 0 0 100%; margin: 0; padding: 0 4px; font-size: 14px; }
+    .daily-edit .save-message a { display: inline-flex; align-items: center; min-height: 44px; color: #9B2634; text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="app" style="padding-bottom:0;">
+  <div class="topbar">
+    <a class="back" id="backBtn" aria-label="返回门店">‹</a>
+    <div class="tt" id="formTitle">清洁报告</div>
+    <span class="mode" id="modeTag"></span>
+  </div>
+
+  <div class="date-bar">
+    <button class="nav-date" id="prevDay" aria-label="前一天">‹</button>
+    <input type="date" id="dateInput" aria-label="检查日期">
+    <button class="nav-date" id="nextDay" aria-label="后一天">›</button>
+  </div>
+
+  <div id="loginTip" class="readonly-tip" style="display:none;">
+    公示页面，仅可查看。门店或员工账号登录后可填写、上传照片。
+  </div>
+
+  <div class="summary">
+    <div class="daily-progress">
+    <div class="progress-text">
+      <span>完成进度</span>
+      <span id="progressText">0 / 0</span>
+    </div>
+    <button id="nextIncomplete" class="btn btn-ghost" type="button" hidden>定位下一项未完成</button>
+    </div>
+    <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div id="itemsWrap"></div>
+
+  <div class="summary">
+    <label class="field-label" for="inspector" style="margin-bottom:8px;">检查负责人</label>
+    <input class="text-input" id="inspector" placeholder="请输入负责人姓名" style="margin-bottom:12px;">
+    <p class="field-error" id="inspectorError" hidden>请填写检查负责人。</p>
+    <div id="notesBox">
+      <div class="field-label" style="margin-bottom:8px;">备注说明</div>
+      <textarea class="text-input" id="notes" rows="2" placeholder="异常情况或补充说明（选填）"></textarea>
+    </div>
+  </div>
+
+  <div class="save-bar" id="saveBar">
+    <div class="save-message" id="saveMessage" role="status" hidden></div>
+    <button class="btn btn-ghost" id="backBtn2" type="button">返回</button>
+    <button class="btn btn-block" id="saveBtn" type="button">保存记录</button>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+const code = qs('code');
+const formCode = qs('form');
+const daily = formCode === 'daily';
+let currentDate = qs('date') || todayStr();
+let state = { items: [], inspector_name: '', notes: '' };
+let me = null;
+let storeId = null;
+let loading = false;
+let ready = false;
+let saving = false;
+let pendingPhotos = 0;
+let recordSignature = null;
+const photoUploads = new Map();
+const dateInput = document.getElementById('dateInput');
+const inspectorInput = document.getElementById('inspector');
+const notesInput = document.getElementById('notes');
+const saveButton = document.getElementById('saveBtn');
+const saveMessage = document.getElementById('saveMessage');
+const nextIncomplete = document.getElementById('nextIncomplete');
+const isSuper = () => me && me.role === 'super_admin';
+
+function syncControls() {
+  const busy = loading || saving || pendingPhotos > 0;
+  for (const id of ['dateInput', 'prevDay', 'nextDay']) document.getElementById(id).disabled = busy;
+  saveButton.disabled = !ready || busy;
+  inspectorInput.disabled = !ready || saving;
+  notesInput.disabled = !ready || saving;
+}
+
+function showSaveMessage(message) {
+  saveMessage.textContent = message;
+  saveMessage.hidden = !message;
+}
+
+function showInspectorError(show) {
+  document.getElementById('inspectorError').hidden = !show;
+  if (show) {
+    inspectorInput.setAttribute('aria-invalid', 'true');
+    inspectorInput.setAttribute('aria-describedby', 'inspectorError');
+    const link = document.createElement('a');
+    link.href = '#inspector';
+    link.textContent = '请填写检查负责人，点此定位';
+    link.onclick = event => {
+      event.preventDefault();
+      inspectorInput.focus();
+    };
+    saveMessage.replaceChildren(link);
+    saveMessage.hidden = false;
+    link.focus();
+  } else {
+    inspectorInput.removeAttribute('aria-invalid');
+    inspectorInput.removeAttribute('aria-describedby');
+    if (saveMessage.querySelector('a')) showSaveMessage('');
+  }
+}
+
+// ===== 本地草稿缓存（按门店+表单+日期隔离）=====
+const draftKey = () => `qsc_draft_${code}_${formCode}_${currentDate}`;
+function saveDraft() {
+  if (!ready || !me || saving) return;
+  try {
+    const payload = {
+      owner: me.username,
+      recordSignature,
+      inspector_name: document.getElementById('inspector').value,
+      notes: document.getElementById('notes').value,
+      items: state.items.map(i => ({
+        item_id: i.item_id, is_done: i.is_done,
+        cleaner_name: i.cleaner_name, photo_path: i.photo_path
+      }))
+    };
+    localStorage.setItem(draftKey(), JSON.stringify(payload));
+  } catch (e) {}
+}
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(draftKey());
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearDraft() {
+  try { localStorage.removeItem(draftKey()); } catch (e) {}
+}
+function applyDraft(d) {
+  const byId = {};
+  (d.items || []).forEach(x => { byId[x.item_id] = x; });
+  state.items.forEach(it => {
+    const x = byId[it.item_id];
+    if (x) {
+      it.is_done = x.is_done ? 1 : 0;
+      it.cleaner_name = x.cleaner_name || '';
+      it.photo_path = x.photo_path || '';
+    }
+  });
+  if (typeof d.inspector_name === 'string') {
+    document.getElementById('inspector').value = d.inspector_name;
+  }
+  if (typeof d.notes === 'string') {
+    document.getElementById('notes').value = d.notes;
+  }
+}
+// 用登录账号的真实姓名预填责任人（仅在空白时）
+function applyCurrentUserName() {
+  const name = me && me.real_name ? me.real_name : '';
+  if (!name) return;
+  state.items.forEach(it => { if (!it.cleaner_name) it.cleaner_name = name; });
+  if (!document.getElementById('inspector').value) {
+    document.getElementById('inspector').value = name;
+  }
+}
+
+const formNames = { daily: '每日清洁报告', weekly: '每周深度清洁', monthly: '月度清洁追踪' };
+document.getElementById('formTitle').textContent = formNames[formCode] || '清洁报告';
+
+document.getElementById('backBtn').href = `/s/${encodeURIComponent(code)}`;
+document.getElementById('backBtn2').onclick = goBack;
+function goBack() { location.href = `/s/${encodeURIComponent(code)}`; }
+
+dateInput.value = currentDate;
+function changeDate(date) {
+  if (!date || loading || saving || pendingPhotos) { dateInput.value = currentDate; return; }
+  currentDate = date;
+  dateInput.value = date;
+  load();
+}
+dateInput.onchange = e => changeDate(e.target.value);
+document.getElementById('prevDay').onclick = () => changeDate(shiftDate(currentDate, -1));
+document.getElementById('nextDay').onclick = () => changeDate(shiftDate(currentDate, 1));
+inspectorInput.oninput = () => {
+  if (inspectorInput.value.trim()) showInspectorError(false);
+  saveDraft();
+};
+notesInput.oninput = saveDraft;
+nextIncomplete.onclick = () => document.querySelector('.check-item:not(.done) .check-name')?.focus();
+
+async function load() {
+  loading = true;
+  ready = false;
+  syncControls();
+  showInspectorError(false);
+  showSaveMessage('');
+  photoUploads.clear();
+  nextIncomplete.hidden = true;
+  const wrap = document.getElementById('itemsWrap');
+  // 加载中先给骨架，避免一屏空白
+  wrap.innerHTML = `<div class="summary">${skeletonCards(4)}</div>`;
+  try {
+    const account = await getMe();
+    state = await api(`/api/public/stores/${encodeURIComponent(code)}/records?form=${encodeURIComponent(formCode)}&date=${currentDate}`);
+    storeId = state.store_id;
+    me = daily && account?.role !== 'super_admin' && Number(account?.store_id) !== Number(storeId) ? null : account;
+    renderRecord();
+    ready = true;
+  } catch (error) {
+    const feedback = document.createElement('div');
+    feedback.className = 'summary';
+    feedback.setAttribute('role', 'alert');
+    const message = document.createElement('p');
+    message.textContent = '读取记录失败：' + error.message;
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'btn btn-ghost';
+    retry.textContent = '重新读取';
+    retry.onclick = load;
+    feedback.append(message, retry);
+    wrap.replaceChildren(feedback);
+  } finally {
+    loading = false;
+    syncControls();
+  }
+}
+
+function renderRecord() {
+  const editable = !!me;
+  document.body.classList.toggle('daily-edit', daily && editable);
+  document.getElementById('modeTag').textContent = editable
+    ? (isSuper() ? '负责人' : '编辑模式') : '公示模式';
+  document.getElementById('loginTip').style.display = editable ? 'none' : 'block';
+  document.getElementById('saveBar').style.display = editable ? 'flex' : 'none';
+  // 公示模式（顾客扫码）：责任人姓名照常展示，但备注属内部信息，不显示也不可编辑
+  document.getElementById('notesBox').style.display = editable ? 'block' : 'none';
+
+  // 检查负责人：可编辑时是输入框，公示模式下退化为只读文本块（同一个元素切类名，避免重复 DOM）
+  const insp = inspectorInput;
+  insp.readOnly = !editable;
+  insp.classList.toggle('text-input', editable);
+  insp.classList.toggle('cleaner-view', !editable);
+  insp.placeholder = editable ? '请输入负责人姓名' : '待补充';
+
+  insp.value = state.inspector_name || '';
+  notesInput.value = state.notes || '';
+
+  recordSignature = state.exists ? JSON.stringify([
+    state.inspector_name, state.notes,
+    state.items.map(item => [item.item_id, item.cleaner_name, item.is_done, item.photo_path])
+  ]) : null;
+  if (editable) {
+    const draft = loadDraft();
+    const matchesOwner = draft && (draft.owner === me.username || (draft.owner == null && !state.exists));
+    const matchesRecord = !state.exists || (daily && draft?.recordSignature === recordSignature);
+    if (matchesOwner && matchesRecord) {
+      applyDraft(draft);
+      toast('已恢复未保存的草稿', 1400);
+    } else if (!state.exists) {
+      applyCurrentUserName();
+    }
+  }
+
+  renderItems();
+  updateProgress();
+}
+
+function renderItems() {
+  const wrap = document.getElementById('itemsWrap');
+  wrap.innerHTML = '';
+  const revised = daily && me;
+  state.items.forEach((it, idx) => {
+    const div = document.createElement('div');
+    div.className = 'check-item' + (it.is_done ? ' done' : '');
+    const completion = `<label class="switch">
+      <input type="checkbox" id="complete-${idx}" aria-label="${escapeHtml(it.name)}：已完成" ${it.is_done ? 'checked' : ''} ${me ? '' : 'disabled'} data-idx="${idx}">
+      <span class="track"></span>
+    </label>`;
+    const cleaner = `<div class="cleaner-field">
+      <label class="field-label" ${me ? 'for="cleaner-' + idx + '"' : ''}>清洁责任人</label>
+      ${me
+        ? `<input class="text-input cleaner" id="cleaner-${idx}" placeholder="填写责任人姓名" value="${escapeHtml(it.cleaner_name || '')}" data-idx="${idx}">`
+        : `<div class="cleaner-view">${it.cleaner_name ? escapeHtml(it.cleaner_name) : '待补充'}</div>`}
+    </div>`;
+    div.innerHTML = `
+      <div class="check-head">
+        <span class="check-no">${idx + 1}</span>
+        ${revised ? `<h2 class="check-name" tabindex="-1">${escapeHtml(it.name)}</h2>` : `<span class="check-name">${escapeHtml(it.name)}</span>`}
+        ${revised ? '' : completion}
+      </div>
+      <div class="check-body">
+        ${revised ? '' : cleaner}
+        <div class="compare">
+          <div class="compare-col std-col" data-idx="${idx}"></div>
+          <div class="compare-col act-col" data-idx="${idx}"></div>
+        </div>
+        ${revised ? cleaner + `<div class="daily-completion"><label for="complete-${idx}">已完成</label>${completion}</div>` : ''}
+      </div>`;
+    wrap.appendChild(div);
+  });
+
+  wrap.querySelectorAll('.switch input').forEach(cb => {
+    cb.onchange = e => {
+      const i = Number(e.target.dataset.idx);
+      state.items[i].is_done = e.target.checked ? 1 : 0;
+      e.target.closest('.check-item').classList.toggle('done', !!e.target.checked);
+      updateProgress();
+      saveDraft();
+    };
+  });
+  wrap.querySelectorAll('.cleaner').forEach(inp => {
+    inp.oninput = e => {
+      state.items[Number(e.target.dataset.idx)].cleaner_name = e.target.value;
+      saveDraft();
+    };
+  });
+  state.items.forEach((it, idx) => { renderStandard(idx); renderActual(idx); });
+}
+
+// ===== Fixed standard (super admin only can change) =====
+function renderStandard(idx) {
+  const col = document.querySelector(`.std-col[data-idx="${idx}"]`);
+  const it = state.items[idx];
+  let html = '<div class="compare-label std"><span class="dot"></span>标准示范</div>';
+  if (it.standard_photo_path) {
+    html += `<div class="std-thumb"><img src="/uploads/${encodeURIComponent(it.standard_photo_path)}" alt="标准示范">`;
+    if (isSuper()) html += '<button class="edit">更换</button>';
+    html += '</div>';
+  } else if (isSuper()) {
+    html += '<div class="std-add"><span class="plus">+</span><span>设置标准</span></div>';
+  } else {
+    html += '<div class="std-empty">标准待设置</div>';
+  }
+  if (it.standard_note) html += `<div class="std-note">${escapeHtml(it.standard_note)}</div>`;
+  if (isSuper()) html += '<div class="std-note" style="color:var(--warn);cursor:pointer;" data-note>编辑标准说明</div>';
+  col.innerHTML = html;
+
+  if (isSuper()) {
+    const trigger = col.querySelector('.std-add') || col.querySelector('.edit');
+    if (trigger) trigger.onclick = () => pickStandardFile(idx);
+    const noteBtn = col.querySelector('[data-note]');
+    if (noteBtn) noteBtn.onclick = () => editStandardNote(idx);
+  }
+}
+
+function pickStandardFile(idx) {
+  const selectedDate = currentDate;
+  const file = document.createElement('input');
+  file.type = 'file';
+  file.accept = 'image/*';
+  file.onchange = () => {
+    if (currentDate === selectedDate && !saving) uploadStandard(idx, file.files[0]);
+  };
+  file.click();
+}
+
+async function uploadStandard(idx, file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('photo', file);
+  fd.append('item_id', state.items[idx].item_id);
+  toast('上传中…', 1200);
+  const trigger = document.querySelector(`.std-col[data-idx="${idx}"] :is(.std-add,.edit)`);
+  if (daily && trigger?.getAttribute('aria-disabled') === 'true') return;
+  if (daily) {
+    trigger?.setAttribute('aria-disabled', 'true');
+    pendingPhotos++;
+    syncControls();
+  }
+  try {
+    const data = await api('/api/admin/standard/photo', { method: 'POST', body: fd });
+    state.items[idx].standard_photo_path = data.filename;
+    renderStandard(idx);
+    toast('标准已更新', 1200);
+  } catch (e) { toast(e.message); }
+  finally {
+    if (daily) {
+      trigger?.removeAttribute('aria-disabled');
+      pendingPhotos--;
+      syncControls();
+    }
+  }
+}
+
+async function editStandardNote(idx) {
+  const cur = state.items[idx].standard_note || '';
+  const v = prompt('请输入该点位的卫生标准说明（员工只读）', cur);
+  if (v === null) return;
+  try {
+    await api('/api/admin/standard/note', {
+      method: 'POST',
+      body: JSON.stringify({ item_id: state.items[idx].item_id, standard_note: v })
+    });
+    state.items[idx].standard_note = v;
+    renderStandard(idx);
+    toast('标准说明已保存', 1200);
+  } catch (e) { toast(e.message); }
+}
+
+// ===== Actual photo (any authenticated user) =====
+function renderActual(idx) {
+  const col = document.querySelector(`.act-col[data-idx="${idx}"]`);
+  const it = state.items[idx];
+  const revised = daily && me;
+  const upload = photoUploads.get(idx);
+  let html = '<div class="compare-label act"><span class="dot"></span>实际照片</div>';
+  if (it.photo_path) {
+    html += `<div class="std-thumb" style="border-color:color-mix(in srgb, var(--accent) 32%, transparent);background:var(--accent-weak);">
+      <img src="/uploads/${encodeURIComponent(it.photo_path)}" alt="实际照片">
+      ${me ? '<button class="edit" style="background:rgba(20,22,26,.62);">删除</button>' : ''}
+    </div>${revised ? '<p class="photo-status" role="status">已上传</p>' : ''}`;
+  } else if (me) {
+    html += revised
+      ? `<button type="button" class="std-add" ${upload?.pending ? 'disabled' : ''}><span class="plus" aria-hidden="true">+</span><span>${upload?.pending ? '上传中…' : '拍照／相册'}</span></button><input type="file" accept="image/*" hidden>
+        <p class="photo-status" role="status"></p>${upload?.error ? '<button type="button" class="btn btn-ghost photo-retry">重试上传</button>' : ''}`
+      : '<div class="std-add" style="border-color:color-mix(in srgb, var(--accent) 40%, transparent);color:var(--accent);background:var(--surface-2);"><span class="plus">+</span><span>拍照/相册</span></div>';
+  } else {
+    html += '<div class="std-empty">未上传</div>';
+  }
+  col.innerHTML = html;
+  if (revised && upload) {
+    const status = col.querySelector('.photo-status');
+    status.textContent = upload.pending ? '正在发送照片' : '上传失败：' + upload.error;
+    status.classList.toggle('photo-error', !!upload.error);
+    const retry = col.querySelector('.photo-retry');
+    if (retry) retry.onclick = () => uploadActual(idx, upload.file);
+  }
+
+  if (me) {
+    const del = col.querySelector('.edit');
+    if (del) del.onclick = async () => {
+      if (saving) return;
+      if (revised) {
+        pendingPhotos++;
+        del.disabled = true;
+        syncControls();
+      }
+      try {
+        await api('/api/admin/photo', { method: 'DELETE', body: JSON.stringify({ filename: it.photo_path }) });
+        it.photo_path = ''; renderActual(idx);
+        saveDraft();
+      } catch (e) { toast(e.message); }
+      finally {
+        if (revised) {
+          del.disabled = false;
+          pendingPhotos--;
+          syncControls();
+        }
+      }
+    };
+    const add = col.querySelector('.std-add');
+    if (add) add.onclick = () => {
+      if (saving) return;
+      const selectedDate = currentDate;
+      const file = col.querySelector('input[type="file"]') || document.createElement('input');
+      file.type = 'file'; file.accept = 'image/*';
+      file.onchange = () => {
+        if (currentDate === selectedDate) uploadActual(idx, file.files[0]);
+      };
+      file.click();
+    };
+  }
+}
+
+async function uploadActual(idx, file) {
+  if (!file || !ready || saving || photoUploads.get(idx)?.pending) return;
+  const fd = new FormData();
+  fd.append('photo', file);
+  if (daily) {
+    photoUploads.set(idx, { file, pending: true });
+    pendingPhotos++;
+    syncControls();
+    renderActual(idx);
+  } else {
+    toast('上传中…', 1200);
+  }
+  try {
+    const data = await api('/api/admin/upload', { method: 'POST', body: fd });
+    state.items[idx].photo_path = data.filename;
+    photoUploads.delete(idx);
+    saveDraft();
+    if (!daily) toast('上传成功', 1200);
+  } catch (e) {
+    if (daily) photoUploads.set(idx, { file, error: e.message });
+    else toast(e.message);
+  } finally {
+    if (daily) {
+      pendingPhotos--;
+      syncControls();
+    }
+    renderActual(idx);
+  }
+}
+
+function updateProgress() {
+  const total = state.items.length;
+  const done = state.items.filter(i => i.is_done).length;
+  document.getElementById('progressText').textContent = `${done} / ${total}`;
+  document.getElementById('progressFill').style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+  nextIncomplete.hidden = !(daily && me && done < total);
+}
+
+saveButton.onclick = async () => {
+  if (!ready || !me || saving || pendingPhotos) return;
+  const inspector = inspectorInput.value.trim();
+  const notes = notesInput.value.trim();
+  if (!inspector) {
+    if (daily) showInspectorError(true);
+    else { toast('请填写检查负责人'); inspectorInput.focus(); }
+    return;
+  }
+  const body = {
+    store_id: storeId, form_code: formCode, record_date: currentDate,
+    inspector_name: inspector, notes,
+    items: state.items.map(i => ({
+      item_id: i.item_id, is_done: i.is_done,
+      cleaner_name: i.cleaner_name, photo_path: i.photo_path
+    }))
+  };
+  showInspectorError(false);
+  showSaveMessage('');
+  saving = true;
+  syncControls();
+  document.getElementById('itemsWrap').inert = true;
+  saveButton.textContent = '保存中…';
+  try {
+    await api('/api/admin/records', { method: 'POST', body: JSON.stringify(body) });
+    clearDraft();
+    toast('已保存');
+    setTimeout(goBack, 700);
+  } catch (e) {
+    if (daily) showSaveMessage('保存失败：' + e.message);
+    else toast(e.message);
+    saving = false;
+    document.getElementById('itemsWrap').inert = false;
+    saveButton.textContent = '保存记录';
+    syncControls();
+  }
+};
+
+load();
+</script>
+</body>
+</html>

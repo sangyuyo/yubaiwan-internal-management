@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>于百万·QSC管理系统 · 卫生照片</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app" style="padding-bottom:24px;">
+  <div class="topbar">
+    <a class="back" id="backBtn">‹</a>
+    <div class="tt">卫生照片上传</div>
+    <span class="mode" id="modeTag"></span>
+  </div>
+  <div class="gallery-grid" id="grid"></div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+const code = qs('code');
+let editable = false;
+let storeId = null;
+
+document.getElementById('backBtn').onclick = () => location.href = `/s/${code}`;
+
+async function load() {
+  editable = await isLoggedIn();
+  document.getElementById('modeTag').textContent = editable ? '编辑模式' : '公示模式';
+  const store = await api(`/api/public/stores/${code}`);
+  storeId = store.id;
+  const rows = await api(`/api/public/stores/${code}/gallery`);
+  render(rows);
+}
+
+function render(rows) {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  if (editable) {
+    const add = document.createElement('label');
+    add.className = 'gallery-add';
+    add.innerHTML = '<span class="plus">+</span><span>拍照/相册上传</span>';
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.accept = 'image/*';
+    file.style.display = 'none';
+    file.onchange = () => upload(file.files[0]);
+    add.appendChild(file);
+    grid.appendChild(add);
+  }
+
+  if (!rows.length && !editable) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">暂无卫生照片</div>';
+    return;
+  }
+
+  rows.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.innerHTML = `
+      <img src="/uploads/${r.filename}" alt="卫生照片">
+      ${editable ? '<button class="del">×</button>' : ''}
+      <div class="cap">${r.note ? r.note : '现场卫生照片'}
+        <div class="t">${fmtTime(r.uploaded_at)}</div>
+      </div>`;
+    if (editable) {
+      item.querySelector('.del').onclick = () => remove(r.id);
+    }
+    grid.appendChild(item);
+  });
+}
+
+async function upload(file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('photo', file);
+  fd.append('store_id', storeId);
+  fd.append('note', '');
+  toast('上传中…', 1200);
+  try {
+    const res = await fetch('/api/admin/gallery', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '上传失败');
+    toast('上传成功', 1200);
+    load();
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+async function remove(id) {
+  if (!confirm('确定删除这张照片？')) return;
+  try {
+    const res = await fetch(`/api/admin/gallery/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('删除失败');
+    load();
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F7F5F1">
+<title>于百万 · 数据追踪</title>
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/app.css">
+<script src="/vendor/html2canvas.min.js"></script>
+</head>
+<body>
+
+<!-- ============ 登录 ============ -->
+<div class="login" id="loginView">
+  <div class="login-card">
+    <div class="login-brand">于百万 · 炸串拌面</div>
+    <div class="login-slogan">生意做遍，不如卖面</div>
+    <h1>数据追踪</h1>
+    <div class="sub">堂食 + 美团 / 淘闪 / 京东 + 团购<br>日完成率 · 月度复盘 · 环同比分析</div>
+    <input type="text" id="loginUser" placeholder="账号" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="密码" autocomplete="current-password">
+    <button class="btn brand" id="loginBtn">登 录</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-note">使用于百万统一账号登录（项目负责人 / 店长 / 店员）</div>
+    <a class="back-home" href="https://sangyu.work/">← 返回工作台</a>
+  </div>
+</div>
+
+<!-- ============ 顶栏 ============ -->
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="brand-mark">于</div>
+      <div>
+        <h1>数据追踪</h1>
+        <div class="brand-sub">堂食 + 美团 / 淘闪 / 京东 + 团购 · 单日完成率 · 月度复盘</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="btn" href="https://sangyu.work/">← 工作台</a>
+      <input type="date" class="date-input" id="dateInput">
+      <button class="btn" id="uploadBtn">导入报表</button>
+      <button class="btn brand" id="posterBtn">通晒海报</button>
+      <span class="who" id="whoami"></span>
+      <button class="btn" id="logoutBtn" style="display:none">退出</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="banner" id="banner"></div>
+
+  <div class="drop" id="drop">
+    <p>选择美团管家「综合营业统计」导出的 Excel 报表</p>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" multiple>
+    <div class="note">可一次选多个文件（按报告内日期分别入库，每个日期覆盖当天已有数据）；回填历史数据后「同比」才有基准</div>
+  </div>
+
+  <!-- KPI 概览带 -->
+  <section class="kpi" id="kpiBand"></section>
+
+  <!-- 环同比 -->
+  <section class="cmp" id="cmpPanel">
+    <div class="cmp-head">
+      <div>
+        <div class="cmp-title">环比 / 同比</div>
+        <div class="cmp-sub" id="cmpSub">—</div>
+      </div>
+      <div class="seg" id="cmpSeg">
+        <button data-w="7" class="on" type="button">近 7 天</button>
+        <button data-w="30" type="button">近 30 天</button>
+      </div>
+    </div>
+    <div class="cmp-grid" id="cmpGrid"></div>
+    <div id="insightBox"></div>
+  </section>
+
+  <!-- 各门店营收走势（多店同图） -->
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">各门店营收走势</div>
+        <div class="panel-sub" id="trendSub">—</div>
+      </div>
+      <div class="panel-tools">
+        <div class="seg seg-sm" id="metricSeg">
+          <button data-m="revenue" class="on" type="button">营收</button>
+          <button data-m="orders" type="button">单量</button>
+          <button data-m="ticket" type="button">客单价</button>
+        </div>
+      </div>
+    </div>
+    <div class="legend" id="trendLegend"></div>
+    <div class="chart-wrap" id="trendChart"></div>
+  </section>
+
+  <!-- 分析：达成预测 / 健康度 / 异常 / 渠道份额 -->
+  <section id="ana"></section>
+
+  <div class="rankbar" id="rankbar"></div>
+  <div class="mcum" id="mcum"></div>
+
+  <!-- 门店卡 -->
+  <div class="cards" id="cards"></div>
+
+  <!-- 渠道结构 + 门店贡献度 -->
+  <section class="split">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">渠道结构</div>
+          <div class="panel-sub" id="channelSub">当日营业收入占比</div>
+        </div>
+      </div>
+      <div id="channelChart"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">门店贡献度</div>
+          <div class="panel-sub" id="contribSub">按当前窗口营收占比</div>
+        </div>
+      </div>
+      <div class="contrib" id="contrib"></div>
+    </div>
+  </section>
+
+  <!-- 月度复盘 -->
+  <div class="month">
+    <h2>月度复盘表（逐日积累 · 全店营业收入）</h2>
+    <div class="tbl-wrap"><table class="month-tbl" id="monthTbl"></table></div>
+  </div>
+
+  <!-- 目标配置 -->
+  <div class="targets" id="targets">
+    <h2>门店月目标配置（项目负责人）</h2>
+    <div id="targetRows"></div>
+    <button class="btn green" id="saveTargets">保存月目标</button>
+  </div>
+</div>
+
+<div id="poster"></div>
+
+<script>
+/* ============================================================================
+   工具函数
+   ========================================================================== */
+const $ = s => document.querySelector(s);
+const fmt = n => (n == null ? '—' : n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+const fmtInt = n => (n == null ? '—' : n.toLocaleString('zh-CN', { maximumFractionDigits: 0 }));
+const fmtWan = n => {
+  if (n == null) return '—';
+  if (Math.abs(n) >= 10000) return (n / 10000).toFixed(n >= 100000 ? 1 : 2).replace(/\.0+$/, '') + '万';
+  return fmtInt(n);
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const todayStr = () => { const t = new Date(); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); };
+const yesterdayStr = () => { const t = new Date(); t.setDate(t.getDate() - 1); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); };
+const dayLabel = () => {
+  if (!curDate) return '当日';
+  if (curDate === yesterdayStr()) return '昨日';
+  if (curDate === todayStr()) return '今日';
+  return Number(curDate.slice(5, 7)) + '月' + Number(curDate.slice(8, 10)) + '日';
+};
+
+let me = null, curDate = '', dash = null, curWin = 7, cmpCache = {};
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (r.status === 401) throw new Error('UNAUTH');
+  if (!r.ok) {
+    let msg = r.statusText;
+    try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (e) {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+function showBanner(msg, isErr) {
+  const b = $('#banner');
+  b.textContent = msg;
+  b.style.background = isErr ? 'var(--danger-weak)' : 'var(--warn-weak)';
+  b.style.borderColor = isErr ? 'var(--danger)' : 'var(--gold-line)';
+  b.style.color = isErr ? 'var(--danger)' : 'var(--warn)';
+  b.classList.add('show');
+}
+
+/* 涨跌显示：箭头 + 百分比 + 绝对差额，两种口径都给，避免只看百分比误判 */
+function deltaHtml(d, opt) {
+  const o = opt || {};
+  if (!d || d.pct == null) return '<span class="delta na">—</span>';
+  const up = d.pct > 0, flat = d.pct === 0;
+  const cls = flat ? 'flat' : (up ? 'up' : 'down');
+  const arrow = flat ? '—' : (up ? '▲' : '▼');
+  const pct = (up ? '+' : '') + d.pct.toFixed(1) + '%';
+  let abs = '';
+  if (o.abs !== false && d.diff != null) {
+    const sign = d.diff > 0 ? '+' : (d.diff < 0 ? '−' : '');
+    const v = Math.abs(d.diff);
+    // 小差额给到分位，大数字用万，避免出现「+¥1」这种失真的取整
+    abs = sign + (o.money === false ? fmtInt(v) : '¥' + (Math.abs(v) < 10000 ? fmt(v) : fmtWan(v)));
+  }
+  return `<span class="delta ${cls}"><i>${arrow}</i>${pct}</span>` +
+         (abs ? `<span class="cmp-abs">${abs}</span>` : '');
+}
+
+/* ============================================================================
+   加载主流程
+   ========================================================================== */
+async function load() {
+  try {
+    me = await api('api/me');
+  } catch (e) {
+    showLogin();
+    return;
+  }
+  hideLogin();
+  $('#whoami').textContent = me.real_name || me.username;
+  $('#logoutBtn').style.display = 'inline-block';
+  $('#targets').classList.toggle('show', me.role === 'super_admin');
+
+  if (!curDate) {
+    try { const l = await api('api/latest-date'); curDate = l.latest || todayStr(); }
+    catch (e) { curDate = todayStr(); }
+    $('#dateInput').value = curDate;
+  }
+
+  await loadDash();
+  await loadMonth();
+  await loadTargets();
+  cmpCache = {};
+  await renderCompare();
+  // 另一个窗口在后台预取：30 天 KPI 不必等用户切 tab 才有数
+  ensureCompare(curWin === 7 ? 30 : 7).then(() => paintKpiDelta()).catch(() => {});
+}
+
+function showLogin() {
+  $('#loginView').classList.add('show');
+  $('#loginErr').textContent = '';
+  $('#loginPass').value = '';
+}
+function hideLogin() { $('#loginView').classList.remove('show'); }
+
+/* ============================================================================
+   看板：KPI 概览 + 门店卡 + 排名 + 月度进度 + 渠道结构
+   ========================================================================== */
+async function loadDash() {
+  const d = await api('api/dashboard?date=' + curDate);
+  dash = d;
+
+  const sum = (fn) => d.stores.reduce((a, s) => a + fn(s), 0);
+  const todayIncome = sum(s => s.today_income);
+  const todayOrders = sum(s => s.today_orders);
+  const targetDaily = sum(s => s.target_daily || 0);
+  const dayRate = targetDaily > 0 ? Math.round((todayIncome / targetDaily) * 1000) / 10 : null;
+  const ticket = todayOrders > 0 ? Math.round((todayIncome / todayOrders) * 100) / 100 : null;
+
+  // ---- KPI 概览带（7/30 天的部分由 compare 回填）
+  $('#kpiBand').innerHTML = `
+    <div class="kpi-tile reveal" style="--i:0;--k-c:var(--brand)">
+      <div class="kpi-label">${dayLabel()}营业收入</div>
+      <div class="kpi-value">¥${fmtWan(todayIncome)}</div>
+      <div class="kpi-foot">
+        <span class="ui-badge ${dayRate != null && dayRate >= 100 ? 'ui-badge--ok' : 'ui-badge--mute'}">
+          完成率 ${dayRate == null ? '未设目标' : dayRate + '%'}
+        </span>
+        <span>日均目标 ¥${fmtWan(targetDaily)}</span>
+      </div>
+    </div>
+    <div class="kpi-tile reveal" style="--i:1;--k-c:var(--gold)" id="kpi7">
+      <div class="kpi-label">近 7 天营收</div>
+      <div class="kpi-value">—</div>
+      <div class="kpi-foot">加载中…</div>
+    </div>
+    <div class="kpi-tile reveal" style="--i:2;--k-c:var(--info)" id="kpi30">
+      <div class="kpi-label">近 30 天营收</div>
+      <div class="kpi-value">—</div>
+      <div class="kpi-foot">加载中…</div>
+    </div>
+    <div class="kpi-tile reveal" style="--i:3;--k-c:var(--accent)" id="kpiTicket">
+      <div class="kpi-label">${dayLabel()}客单价</div>
+      <div class="kpi-value">¥${ticket == null ? '—' : fmt(ticket)}</div>
+      <div class="kpi-foot"><span>共 ${fmtInt(todayOrders)} 单</span></div>
+    </div>`;
+
+  // ---- 门店卡
+  const cards = $('#cards');
+  const best = d.ranking.find(r => r.rank === 1);
+  const worst = d.ranking.find(r => r.rank === d.ranking.length && d.ranking.length > 1);
+  const stores = [...d.stores].sort((a, b) => (b.day_rate ?? -1) - (a.day_rate ?? -1));
+  cards.innerHTML = stores.map((s, i) => {
+    const up = s.day_rate != null && s.day_rate >= 100;
+    const rateCls = s.day_rate == null ? 'na' : (up ? 'up' : 'down');
+    const tagText = s.day_rate == null ? '无目标' : (up ? '超额' : '缺口');
+    const isBest = best && s.store_name === best.store_name;
+    const isWorst = worst && s.store_name === worst.store_name;
+    const cumW = s.cum_progress_target > 0
+      ? Math.min(100, Math.round((s.month_cum.income || 0) / s.cum_progress_target * 100))
+      : 0;
+    const ticketS = s.today_orders > 0 ? Math.round(s.today_income / s.today_orders * 100) / 100 : null;
+    return `
+      <div class="card${isBest ? ' best' : ''}${isWorst ? ' worst' : ''}" style="--i:${i}">
+        <h3>
+          ${esc(s.store_name)}
+          ${isBest ? '<span class="crown">🏆</span>' : ''}
+          ${isWorst ? '<span class="crown" style="background:var(--surface-3);color:var(--ink-400)">!</span>' : ''}
+        </h3>
+        <div class="big"><span class="num">¥${fmt(s.today_income)}</span><span class="unit">全店营业收入</span></div>
+        <div class="sub-line">
+          <span>${fmtInt(s.today_orders)} 单</span>
+          <span style="color:var(--ink-300)">·</span>
+          <span>客单价 ¥${ticketS == null ? '—' : fmt(ticketS)}</span>
+        </div>
+        <div class="rate ${rateCls}">
+          完成率 ${s.day_rate == null ? '--' : s.day_rate + '%'}
+          <span class="tag ${rateCls}">${tagText}</span>
+        </div>
+        <div class="sub-line" style="margin-top:6px">
+          <span>${dayLabel()} ${s.gap_today == null ? '—' : (s.gap_today >= 0 ? '缺口 ¥' + fmt(s.gap_today) : '超额 ¥' + fmt(-s.gap_today))}</span>
+        </div>
+        <div class="bar"><i style="width:${cumW}%"></i></div>
+        <div class="ch">
+          <div class="dine">
+            <span>堂食 ¥${fmt(s.today.dine_in.income)} / ${s.today.dine_in.orders}单</span>
+            <span class="dine-top">TOP${s.t_dine_in}</span>
+          </div>
+          <div><b><i class="pf" style="background:var(--pf-meituan)"></i>美团</b> ¥${fmt(s.today.meituan.income)}<br>${s.today.meituan.orders}单</div>
+          <div><b><i class="pf" style="background:var(--pf-taobao)"></i>淘闪</b> ¥${fmt(s.today.taobao_flash.income)}<br>${s.today.taobao_flash.orders}单</div>
+          <div><b><i class="pf" style="background:var(--pf-jd)"></i>京东</b> ¥${fmt(s.today.jd.income)}<br>${s.today.jd.orders}单</div>
+          <div><span class="gp">团购</span> ¥${fmt(s.today.groupon)}<br><span class="gp">已计入堂食</span></div>
+        </div>
+        <div class="cum">
+          本月累计 <b>¥${fmt(s.month_cum.income)}</b> / ${fmtInt(s.month_cum.orders)} 单<br>
+          应达 ¥${fmt(s.cum_progress_target)}（${s.day_of_month}/${s.days_in_month}天 · ${Math.round(s.day_of_month / s.days_in_month * 1000) / 10}%）<br>
+          进度完成率 <b>${s.cum_progress_rate == null ? '--' : s.cum_progress_rate + '%'}</b>
+          <span class="gap ${s.gap_progress != null && s.gap_progress >= 0 ? 'down' : 'up'}">
+            （${s.gap_progress == null ? '—' : (s.gap_progress >= 0 ? '缺口 ¥' + fmt(s.gap_progress) : '超前 ¥' + fmt(-s.gap_progress))}）
+          </span>
+        </div>
+      </div>`;
+  }).join('');
+
+  if (d.stores.every(s => s.today_orders === 0)) {
+    showBanner(dayLabel() + '暂无数据：可选择其他日期，或点「导入报表」上传该日报表。');
+  }
+
+  // ---- 排名条
+  const rb = $('#rankbar');
+  rb.innerHTML = d.ranking.length
+    ? `${dayLabel()}排名（按完成率）：` + d.ranking.map(r =>
+        `<span class="item">#${r.rank} <b>${esc(r.store_name)}</b> ${r.day_rate == null ? '--' : r.day_rate + '%'}</span>`).join('')
+    : dayLabel() + '暂无数据';
+
+  // ---- 全店月度进度
+  const mc = $('#mcum');
+  const tt = d.totals;
+  if (tt && tt.store_count > 0) {
+    const progPct = Math.round(d.day_of_month / d.days_in_month * 1000) / 10;
+    const over = tt.gap_progress <= 0;
+    mc.innerHTML = `
+      <span class="m-label">全店月目标（${tt.store_count}店）<b>¥${fmtWan(tt.target_month)}</b></span>
+      <span class="m-label">按进度应达<b>¥${fmtWan(tt.cum_progress_target)}</b></span>
+      <span class="m-label">已累计<b>¥${fmtWan(tt.month_cum_income)}</b></span>
+      <span class="m-label">累计${over ? '超前' : '缺口'}<b class="${over ? 'ok' : 'gap'}">¥${fmtWan(Math.abs(tt.gap_progress))}</b></span>
+      <div class="m-sub">进度完成率 ${tt.cum_progress_rate == null ? '--' : tt.cum_progress_rate + '%'} · 时间进度 ${progPct}%（${d.day_of_month}/${d.days_in_month} 天）· ${tt.gap_month > 0 ? '距整月目标还差 ¥' + fmtWan(tt.gap_month) : '已超整月目标 ¥' + fmtWan(-tt.gap_month)}</div>`;
+  } else {
+    mc.innerHTML = '';
+  }
+
+  renderChannel(d);
+}
+
+/* ============================================================================
+   环同比：7 / 30 天
+   ========================================================================== */
+async function ensureCompare(w) {
+  if (cmpCache[w]) return cmpCache[w];
+  const d = await api(`api/compare?date=${curDate}&window=${w}`);
+  cmpCache[w] = d;
+  return d;
+}
+
+async function renderCompare() {
+  const d = await ensureCompare(curWin);
+  paintCompare(d);
+  paintKpiDelta(d);
+  paintTrend(d);
+  paintContrib(d);
+  paintInsight(d);
+  paintAnalysis(d);
+}
+
+function paintCompare(d) {
+  $('#cmpSub').innerHTML =
+    `本期 ${d.current.label}（${d.current.days_with_data} 天有数据） · ` +
+    `环比基准 ${d.prev.label}` +
+    (d.yoy.available
+      ? ` · 同比基准 ${d.yoy.label}`
+      : ` · <span class="sub-flag">同比：去年同期无记录，只显示本期值</span>`);
+
+  const cards = [
+    { name: '营业收入', key: 'revenue', val: d.current.revenue, money: true },
+    { name: '订单量', key: 'orders', val: d.current.orders, money: false },
+    { name: '客单价', key: 'avg_ticket', val: d.current.avg_ticket, money: true }
+  ];
+
+  $('#cmpGrid').innerHTML = cards.map(c => {
+    const p = d.delta.prev[c.key];
+    const y = d.delta.yoy[c.key];
+    const valTxt = c.val == null ? '—'
+      : (c.money ? '¥' + fmt(c.val) : fmtInt(c.val));
+    // 同比没有去年数据时不编造百分比，直接给本期绝对值并写明原因
+    const yoyCell = d.yoy.available
+      ? deltaHtml(y, { money: c.money })
+      : `<span class="cmp-plain">本期 ${valTxt}</span>`;
+    const prevCell = d.prev.available
+      ? deltaHtml(p, { money: c.money })
+      : `<span class="cmp-plain">无基准</span>`;
+    return `
+      <div class="cmp-card">
+        <div class="cmp-name">${c.name}${c.key === 'avg_ticket' ? '（每单）' : ''}</div>
+        <div class="cmp-val">${valTxt}${c.key === 'orders' ? '<small>单</small>' : ''}</div>
+        <div class="cmp-row">
+          <span class="cmp-key">环比</span>${prevCell}
+        </div>
+        <div class="cmp-row">
+          <span class="cmp-key">同比</span>${yoyCell}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* KPI 带里的 7 天 / 30 天格子 + 客单价格：每次都整体重建 innerHTML。
+   旧版对客单价用了 += ，切窗口会被反复调用，内容一层层叠上去，所以这一版全部改成赋值。 */
+function paintKpiDelta() {
+  const fillWin = (id, cmp) => {
+    const box = $(id);
+    if (!box) return;
+    const val = box.querySelector('.kpi-value');
+    const foot = box.querySelector('.kpi-foot');
+    if (!cmp) { val.textContent = '—'; foot.innerHTML = '<span>加载中…</span>'; return; }
+    if (!cmp.current.available) { val.textContent = '—'; foot.innerHTML = '<span>该区间无数据</span>'; return; }
+    val.textContent = '¥' + fmtWan(cmp.current.revenue);
+    const p = cmp.delta.prev.revenue;
+    foot.innerHTML = cmp.prev.available
+      ? `<span class="cmp-key" style="width:auto">环比</span>${deltaHtml(p, { money: true })}`
+      : `<span>环比缺基准数据</span>`;
+  };
+  fillWin('#kpi7', cmpCache[7]);
+  fillWin('#kpi30', cmpCache[30]);
+
+  const box = $('#kpiTicket');
+  if (!box || !dash) return;
+  const orders = dash.stores.reduce((a, s) => a + s.today_orders, 0);
+  const cmp = cmpCache[curWin];
+  let html = `<span>共 ${fmtInt(orders)} 单</span>`;
+  if (cmp && cmp.current.avg_ticket != null) {
+    const p = cmp.delta.prev.avg_ticket;
+    html += `<span style="color:var(--ink-300)">·</span>` +
+      `<span class="cmp-key" style="width:auto">近${curWin}天 ¥${fmt(cmp.current.avg_ticket)}</span>` +
+      (p.pct != null ? deltaHtml(p, { money: true }) : '');
+  }
+  box.querySelector('.kpi-foot').innerHTML = html;
+}
+
+/* ============================================================================
+   走势对比图：本期实线 + 上期虚线 + 同比点线 + 日均目标参考线
+   ========================================================================== */
+function niceMax(v) {
+  if (!v || v <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / mag;
+  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+  return step * mag;
+}
+
+/* 门店配色：按门店顺序固定分配，同一家店在任何图表里都是同一个颜色 */
+const STORE_COLORS = ['#C0392B', '#0C6B4B', '#1E5FA8', '#A9803A', '#7A4E9E', '#B4562F'];
+let metric = 'revenue';
+
+const METRIC = {
+  revenue: { name: '营收', get: p => p.revenue, fmt: v => '¥' + (Math.abs(v) >= 10000 ? fmtWan(v) : fmt(v)) },
+  orders: { name: '单量', get: p => p.orders, fmt: v => fmtInt(v) + ' 单' },
+  ticket: {
+    name: '客单价',
+    get: p => (p.orders > 0 && p.revenue != null ? Math.round((p.revenue / p.orders) * 100) / 100 : null),
+    fmt: v => '¥' + fmt(v)
+  }
+};
+
+function paintTrend(d) {
+  const box = $('#trendChart');
+  const legend = $('#trendLegend');
+  const n = d.window;
+  const m = METRIC[metric];
+
+  const stores = d.stores.map((s, i) => ({
+    name: s.store_name,
+    color: STORE_COLORS[i % STORE_COLORS.length],
+    cur: s.series.current.map(m.get),
+    prev: s.series.prev.map(m.get),
+    delta: s.delta.prev[metric === 'orders' ? 'orders' : (metric === 'ticket' ? 'avg_ticket' : 'revenue')]
+  }));
+
+  let maxV = 0;
+  stores.forEach(s => s.cur.forEach(v => { if (v != null && v > maxV) maxV = v; }));
+
+  if (!maxV) {
+    box.innerHTML = '<div class="ui-empty"><div class="ui-empty__icon">—</div><div class="ui-empty__title">这个区间还没有数据</div><div class="ui-empty__hint">上传对应日期的报表后即可看到各门店走势</div></div>';
+    legend.innerHTML = '';
+    $('#trendSub').textContent = '—';
+    return;
+  }
+
+  const W = 980, H = 340, padL = 58, padR = 78, padT = 22, padB = 40;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const top = niceMax(maxV * 1.1);
+  const x = i => padL + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const y = v => padT + innerH - (v / top) * innerH;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="各门店${m.name}走势">`;
+
+  // 网格 + 纵轴
+  for (let k = 0; k <= 4; k++) {
+    const v = (top / 4) * k;
+    const yy = y(v);
+    svg += `<line class="grid-line" x1="${padL}" y1="${yy.toFixed(1)}" x2="${W - padR}" y2="${yy.toFixed(1)}"/>`;
+    const lab = metric === 'orders'
+      ? fmtInt(v)
+      : (v >= 10000 ? (v / 10000).toFixed(v >= 100000 ? 0 : 1).replace(/\.0$/, '') + '万' : Math.round(v));
+    svg += `<text class="axis-label" x="${padL - 8}" y="${(yy + 3.5).toFixed(1)}" text-anchor="end">${lab}</text>`;
+  }
+
+  // 横轴日期
+  const step = Math.max(1, Math.ceil(n / 8));
+  for (let i = 0; i < n; i += step) {
+    svg += `<text class="axis-label" x="${x(i).toFixed(1)}" y="${H - 14}" text-anchor="middle">${d.series.current[i].date.slice(5).replace('-', '/')}</text>`;
+  }
+
+  // 每家店一条线
+  stores.forEach(s => { svg += lineOf(s.cur, x, y, s.color, 2); });
+
+  // 末端数值标签：按 y 排序后错开，避免几家店数值接近时标签叠在一起
+  const ends = stores.map(s => {
+    let last = -1;
+    s.cur.forEach((v, i) => { if (v != null) last = i; });
+    return last < 0 ? null : { s, i: last, v: s.cur[last], y: y(s.cur[last]) };
+  }).filter(Boolean).sort((a, b) => a.y - b.y);
+  let prevY = -Infinity;
+  ends.forEach(e => {
+    e.ly = Math.max(e.y, prevY + 13);
+    prevY = e.ly;
+  });
+  ends.forEach(e => {
+    const anchorX = x(e.i) + (n <= 1 ? 8 : 6);
+    svg += `<circle cx="${x(e.i).toFixed(1)}" cy="${e.y.toFixed(1)}" r="3.4" fill="${e.s.color}" stroke="#fff" stroke-width="1.5"/>`;
+    svg += `<text class="end-label" x="${anchorX.toFixed(1)}" y="${(e.ly + 3.5).toFixed(1)}" fill="${e.s.color}">${metric === 'orders' ? fmtInt(e.v) : (Math.abs(e.v) >= 10000 ? fmtWan(e.v) : Math.round(e.v))}</text>`;
+  });
+
+  svg += `<g id="hoverLayer"><line class="hover-line" x1="0" y1="${padT}" x2="0" y2="${padT + innerH}" style="opacity:0"/></g>`;
+  svg += '</svg>';
+  box.innerHTML = svg + '<div class="chart-tip" id="chartTip"></div>';
+  bindTrendHover(d, { padL, innerW, n, x, stores, m });
+  box.querySelectorAll('.point').forEach(p => p.style.stroke = '#fff');
+
+  legend.innerHTML = stores.map(s => {
+    const dp = s.delta;
+    const tail = dp && dp.pct != null
+      ? `<span class="legend-delta ${dp.pct > 0 ? 'up' : (dp.pct < 0 ? 'down' : '')}">${dp.pct > 0 ? '+' : ''}${dp.pct.toFixed(1)}%</span>`
+      : '';
+    return `<span class="legend-item"><span class="legend-swatch" style="background:${s.color}"></span>${esc(s.name)}${tail}</span>`;
+  }).join('');
+
+  $('#trendSub').innerHTML = `${d.current.label} · 近 ${n} 天 · ${m.name} · 悬停看逐日明细与门店间差距` +
+    (d.prev.available ? '' : ' <span class="sub-flag">环比期无数据</span>');
+}
+
+/* 折线：null 处断开，不连成假直线（缺数据的日子不该画成"那天是 0"） */
+function lineOf(vals, x, y, color, width) {
+  const runs = [];
+  let run = [];
+  vals.forEach((v, i) => {
+    if (v == null) { if (run.length) { runs.push(run); run = []; } }
+    else run.push([i, v]);
+  });
+  if (run.length) runs.push(run);
+  return runs.map(r => {
+    if (r.length === 1) {
+      const [i, v] = r[0];
+      return `<circle class="point" cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4" fill="${color}"/>`;
+    }
+    const pts = r.map(([i, v]) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    return `<polyline fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/>`;
+  }).join('');
+}
+
+function bindTrendHover(d, g) {
+  const wrap = $('#trendChart');
+  const svg = wrap.querySelector('svg');
+  const tip = $('#chartTip');
+  const hline = wrap.querySelector('#hoverLayer line');
+  if (!svg || !tip) return;
+
+  const move = (e) => {
+    const rect = svg.getBoundingClientRect();
+    const scale = 980 / rect.width;
+    const sx = (e.clientX - rect.left) * scale;
+    let i = Math.round((sx - g.padL) / (g.innerW / Math.max(1, g.n - 1)));
+    i = Math.max(0, Math.min(g.n - 1, i));
+    const px = g.x(i);
+    hline.setAttribute('x1', px.toFixed(1));
+    hline.setAttribute('x2', px.toFixed(1));
+    hline.style.opacity = '1';
+
+    // 按当日数值从高到低排，一眼看出谁领先谁掉队
+    const rows = g.stores
+      .map(s => ({ name: s.name, color: s.color, v: s.cur[i], p: s.prev[i] }))
+      .sort((a, b) => (b.v == null ? -1 : b.v) - (a.v == null ? -1 : a.v));
+
+    const rowsHtml = rows.map(r => {
+      const diff = (r.v != null && r.p != null) ? r.v - r.p : null;
+      const diffTxt = diff == null ? ''
+        : `<span class="t-diff ${diff > 0 ? 'up' : (diff < 0 ? 'down' : '')}">${diff >= 0 ? '+' : '−'}${g.m.fmt(Math.abs(diff))}</span>`;
+      return `<div class="t-row"><span><span class="t-dot" style="background:${r.color}"></span>${esc(r.name)}</span>` +
+        `<span class="t-v">${r.v == null ? '—' : g.m.fmt(r.v)}${diffTxt}</span></div>`;
+    }).join('');
+
+    tip.innerHTML = `<div class="t-date">${d.series.current[i].date}</div>${rowsHtml}`;
+    tip.setAttribute('data-show', 'true');
+    const leftPx = (px / 980) * rect.width;
+    tip.style.left = Math.max(90, Math.min(rect.width - 90, leftPx)) + 'px';
+    tip.style.top = '20px';
+  };
+
+  wrap.addEventListener('pointermove', move);
+  wrap.addEventListener('pointerleave', () => {
+    tip.setAttribute('data-show', 'false');
+    hline.style.opacity = '0';
+  });
+}
+
+/* ============================================================================
+   门店贡献度
+   ========================================================================== */
+function paintContrib(d) {
+  const box = $('#contrib');
+  const rows = [...d.stores].filter(s => s.current.revenue > 0)
+    .sort((a, b) => b.current.revenue - a.current.revenue);
+  const total = rows.reduce((a, s) => a + s.current.revenue, 0);
+  if (!rows.length) {
+    box.innerHTML = '<div class="ui-empty"><div class="ui-empty__title">本区间无营收数据</div></div>';
+    return;
+  }
+  box.innerHTML = rows.map(s => {
+    const pct = total > 0 ? (s.current.revenue / total) * 100 : 0;
+    const dp = s.delta.prev.revenue;
+    return `
+      <div class="contrib-row">
+        <div class="contrib-name">${esc(s.store_name)}</div>
+        <div class="contrib-track"><div class="contrib-fill" style="width:${pct.toFixed(1)}%"></div></div>
+        <div class="contrib-val">¥${fmtWan(s.current.revenue)}<small>${pct.toFixed(1)}%${dp.pct == null ? '' : ' · ' + (dp.pct > 0 ? '+' : '') + dp.pct.toFixed(1) + '%'}</small></div>
+      </div>`;
+  }).join('');
+  $('#contribSub').textContent = `按 ${d.current.label} 营收占比 · 合计 ¥${fmtWan(total)}`;
+}
+
+/* ============================================================================
+   增长归因：把"为什么涨/跌"算出来，而不是只给一个百分比
+   营收 = 单量 × 客单价，所以变化可以拆成"量"和"价"两部分
+   ========================================================================== */
+function paintInsight(d) {
+  const box = $('#insightBox');
+  const c = d.current, p = d.prev;
+  if (!p.available || !c.available) {
+    box.innerHTML = `
+      <div class="insight">
+        <div class="ic">i</div>
+        <div>环比基准（${d.prev.label}）没有数据，暂时无法做增长归因。上传该区间的历史报表后会自动出现分析。</div>
+      </div>`;
+    return;
+  }
+
+  const revDiff = c.revenue - p.revenue;
+  const revPct = p.revenue ? (revDiff / p.revenue) * 100 : null;
+
+  // 门店贡献：找出最大正贡献与最大负贡献
+  const byStore = d.stores
+    .map(s => ({ name: s.store_name, diff: s.current.revenue - s.prev.revenue }))
+    .filter(x => Math.abs(x.diff) > 0.5)
+    .sort((a, b) => b.diff - a.diff);
+  const topUp = byStore[0];
+  const topDown = byStore[byStore.length - 1];
+
+  // 量价拆解
+  let decompose = '';
+  if (p.avg_ticket != null && c.avg_ticket != null && p.orders > 0) {
+    const volEffect = (c.orders - p.orders) * p.avg_ticket;
+    const priceEffect = c.orders * (c.avg_ticket - p.avg_ticket);
+    const volPct = p.revenue ? (volEffect / p.revenue) * 100 : 0;
+    const pricePct = p.revenue ? (priceEffect / p.revenue) * 100 : 0;
+    const main = Math.abs(volEffect) >= Math.abs(priceEffect) ? '单量' : '客单价';
+    decompose = `拆开看，增长主要来自<b>${main}</b>：单量贡献 ${volPct >= 0 ? '+' : ''}${volPct.toFixed(1)}%、客单价贡献 ${pricePct >= 0 ? '+' : ''}${pricePct.toFixed(1)}%。`;
+  }
+
+  const dir = revDiff >= 0 ? 'up' : 'down';
+  const head = `${d.current.label} 全店营收 ¥${fmtWan(c.revenue)}，` +
+    `较环比期${revDiff >= 0 ? '增加' : '减少'} <span class="${dir}">¥${fmtWan(Math.abs(revDiff))}（${revPct == null ? '—' : (revPct >= 0 ? '+' : '') + revPct.toFixed(1) + '%'}）</span>。`;
+
+  let storeTxt = '';
+  if (topUp && topUp.diff > 0) {
+    storeTxt = `拉动最大的是<b>${esc(topUp.name)}</b>（+¥${fmtWan(topUp.diff)}）`;
+  }
+  if (topDown && topDown.diff < 0) {
+    storeTxt += `${storeTxt ? '，' : ''}拖累最大的是<b>${esc(topDown.name)}</b>（−¥${fmtWan(Math.abs(topDown.diff))}）`;
+  }
+  if (storeTxt) storeTxt += '。';
+
+  // 谁把大盘拉动/拖累了几个百分点：pp 比金额更能说明"业绩变化是谁造成的"
+  const at = d.analysis && d.analysis.attribution;
+  const chips = at && at.stores && at.stores.length
+    ? `<div class="attr">
+         <span class="attr-lead">各店对全店增速的贡献</span>
+         ${at.stores.map(s => `<span class="attr-chip ${s.pp > 0 ? 'up' : 'down'}">${esc(s.store_name)}<b>${s.pp > 0 ? '+' : ''}${s.pp}pp</b></span>`).join('')}
+       </div>`
+    : '';
+
+  box.innerHTML = `
+    <div class="insight">
+      <div class="ic">i</div>
+      <div>${head}${storeTxt}${decompose}${chips}</div>
+    </div>`;
+}
+
+/* ============================================================================
+   分析层：达成预测 / 门店健康度 / 异常波动 / 渠道份额
+   结论全部由后端算好（server.js 的 analysis 字段），这里只负责呈现，
+   避免同一套口径在前后端各写一遍、久而久之对不上。
+   ========================================================================== */
+const LEVEL_TEXT = { ok: '健康', warn: '留意', bad: '告警', na: '无目标' };
+
+function paintAnalysis(d) {
+  const a = d.analysis;
+  const box = $('#ana');
+  if (!a) { box.innerHTML = ''; return; }
+  const f = a.forecast;
+
+  // ---- 达成预测
+  const rate = f.target > 0 && f.predicted != null ? Math.round((f.predicted / f.target) * 1000) / 10 : null;
+  const tone = ({ done: 'ok', easy: 'ok', ok: 'mid', tight: 'warn', hard: 'bad' })[f.verdict] || 'na';
+  const timePct = Math.round((f.day_of_month / f.days_in_month) * 1000) / 10;
+  const barW = rate == null ? 0 : Math.min(100, rate);
+  const gapTxt = f.gap == null ? ''
+    : (f.gap > 0 ? `按此节奏将差 <b class="bad">¥${fmtWan(f.gap)}</b>` : `按此节奏可超 <b class="ok">¥${fmtWan(-f.gap)}</b>`);
+  const speedTxt = f.ratio == null ? '—'
+    : (f.ratio <= 1 ? '无需提速' : '+' + Math.round((f.ratio - 1) * 100) + '%');
+
+  const forecast = `
+    <div class="panel span2">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">目标达成预测</div>
+          <div class="panel-sub">用近 7 天日均外推月末，比"还剩多少天"更能说明问题</div>
+        </div>
+        <span class="verdict ${tone}">${esc(f.verdict_text)}</span>
+      </div>
+      <div class="fc">
+        <div class="fc-main">
+          <div class="fc-label">预计月末累计营收</div>
+          <div class="fc-num">${f.predicted == null ? '—' : '¥' + fmtWan(f.predicted)}</div>
+          <div class="fc-sub">月目标 ¥${fmtWan(f.target)} · ${rate == null ? '未设目标' : '预计完成 ' + rate + '%'}${gapTxt ? ' · ' + gapTxt : ''}</div>
+          <div class="fc-bar" title="时间已过 ${timePct}%">
+            <i style="width:${barW}%"></i>
+            <span class="fc-mark" style="left:${timePct}%"></span>
+          </div>
+          <div class="fc-legend"><span>进度 ${rate == null ? '—' : rate + '%'}</span><span>时间已过 ${timePct}%（${f.day_of_month}/${f.days_in_month} 天）</span></div>
+        </div>
+        <div class="fc-cells">
+          <div><span>本月累计</span><b>¥${fmtWan(f.month_cum)}</b></div>
+          <div><span>剩余 ${f.days_left} 天日均需</span><b>${f.need_daily == null ? '—' : '¥' + fmtWan(f.need_daily)}</b></div>
+          <div><span>近 7 天日均</span><b>${f.recent_daily == null ? '—' : '¥' + fmtWan(f.recent_daily)}</b></div>
+          <div><span>需比现节奏提速</span><b class="${tone === 'ok' ? 'ok' : (tone === 'bad' ? 'bad' : '')}">${speedTxt}</b></div>
+        </div>
+      </div>
+    </div>`;
+
+  // ---- 健康度
+  const health = `
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">门店健康度</div>
+          <div class="panel-sub">达标情况 + 波动幅度，判断是"稳定"还是"忽高忽低"</div>
+        </div>
+      </div>
+      <div class="hc">
+        ${a.health.map(h => `
+          <div class="hc-row">
+            <span class="hc-dot ${h.level}"></span>
+            <div>
+              <div class="hc-top">
+                <b>${esc(h.store_name)}</b><span class="hc-tag ${h.level}">${LEVEL_TEXT[h.level]}</span>
+                <span class="hc-rate">月进度 ${h.month_rate == null ? '--' : h.month_rate + '%'}</span>
+              </div>
+              ${h.month_rate == null ? '' : `<div class="hc-bar" title="时间进度 ${h.time_rate}%">
+                <i style="width:${Math.min(100, h.month_rate)}%"></i>
+                <span class="hc-tick" style="left:${Math.min(100, h.time_rate)}%"></span>
+              </div>`}
+              <p>${esc(h.text)}</p>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // ---- 异常波动
+  const anomRows = a.anomalies.length
+    ? a.anomalies.map(x => {
+        const cls = x.dir === 'up' ? 'up' : 'down';
+        const dd = Number(x.date.slice(5, 7)) + '/' + Number(x.date.slice(8, 10));
+        return `<div class="an-row">
+          <span class="an-date">${dd}</span>
+          <b>${esc(x.store_name)}</b>
+          <span class="an-val">¥${fmtWan(x.revenue)}</span>
+          <span class="an-dev ${cls}">${x.dev_pct > 0 ? '+' : ''}${x.dev_pct}%</span>
+          <span class="an-note">${x.dir === 'up' ? '高于' : '低于'}自身中位数 ${fmtWan(x.expected)}</span>
+        </div>`;
+      }).join('')
+    : '<div class="ui-empty"><div class="ui-empty__title">这段时间没有明显异常</div><div class="ui-empty__hint">偏离自身中位数 40% 以上才会被标记</div></div>';
+
+  const anomalies = `
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">异常波动</div>
+          <div class="panel-sub">偏离该店自身近期中位数 40% 以上、且差额过小的不算</div>
+        </div>
+      </div>
+      <div class="an">${anomRows}</div>
+    </div>`;
+
+  // ---- 渠道份额
+  const chRow = (r) => {
+    const color = 'var(--pf-' + (r.key === 'dine_in' ? 'dine' : (r.key === 'taobao_flash' ? 'taobao' : r.key)) + ')';
+    const pp = r.share_pp;
+    const ppTxt = pp == null ? '—' : (pp > 0 ? '+' : '') + pp + 'pp';
+    const ppCls = pp == null ? 'na' : (pp > 0 ? 'up' : (pp < 0 ? 'down' : 'na'));
+    return `<tr>
+      <td class="ch-name"><i style="background:${color}"></i>${r.name}</td>
+      <td>¥${fmtWan(r.current)}</td>
+      <td class="sub">¥${fmtWan(r.prev)}</td>
+      <td>${deltaHtml({ pct: r.pct, diff: r.diff }, { abs: false })}</td>
+      <td>${r.share == null ? '—' : r.share + '%'}</td>
+      <td class="${ppCls}">${ppTxt}</td>
+    </tr>`;
+  };
+
+  const channels = `
+    <div class="panel span2">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">渠道份额变化</div>
+          <div class="panel-sub">${esc(a.channels.text)}</div>
+        </div>
+      </div>
+      <div class="tbl-wrap chg-wrap">
+        <table class="chg-tbl">
+          <thead><tr><th>渠道</th><th>本期</th><th>上期</th><th>营收变化</th><th>本期份额</th><th>份额变化</th></tr></thead>
+          <tbody>${a.channels.rows.map(chRow).join('')}</tbody>
+        </table>
+      </div>
+      ${a.notes.length ? `<div class="ana-notes">口径说明：${a.notes.map(esc).join('；')}。</div>` : ''}
+    </div>`;
+
+  box.innerHTML = `<div class="ana-grid">${forecast}${health}${anomalies}${channels}</div>`;
+}
+
+/* ============================================================================
+   渠道结构（当日）：颜色与平台 VI 对齐——美团黄、淘闪蓝、京东红（base.css 固定 token）
+   ========================================================================== */
+function renderChannel(d) {
+  const box = $('#channelChart');
+  if (!d || !d.stores || !d.stores.length) {
+    box.innerHTML = '<div class="ui-empty"><div class="ui-empty__title">暂无当日数据</div></div>';
+    return;
+  }
+  const chs = [
+    { key: 'dine_in', name: '堂食', color: 'var(--pf-dine)' },
+    { key: 'meituan', name: '美团', color: 'var(--pf-meituan)' },
+    { key: 'taobao_flash', name: '淘闪', color: 'var(--pf-taobao)' },
+    { key: 'jd', name: '京东', color: 'var(--pf-jd)' }
+  ];
+  const rows = d.stores.map(s => {
+    const total = chs.reduce((sum, c) => sum + ((s.today[c.key] && s.today[c.key].income) || 0), 0);
+    const segs = chs.map(c => {
+      const v = (s.today[c.key] && s.today[c.key].income) || 0;
+      const pct = total > 0 ? (v / total) * 100 : 0;
+      return pct > 0 ? `<span style="width:${pct.toFixed(2)}%;background:${c.color}" title="${c.name} ¥${fmt(v)}"></span>` : '';
+    }).join('');
+    return `
+      <div class="stack-row">
+        <div class="stack-head"><span>${esc(s.store_name)}</span><b>¥${fmt(total)}</b></div>
+        <div class="stack-bar">${segs || '<span style="width:100%;background:var(--surface-3)"></span>'}</div>
+      </div>`;
+  }).join('');
+  const legend = chs.map(c =>
+    `<span class="legend-item"><span class="legend-swatch" style="background:${c.color}"></span>${c.name}</span>`).join('');
+  box.innerHTML = rows + `<div class="legend">${legend}</div>`;
+  $('#channelSub').textContent = `${dayLabel()}营业收入占比`;
+}
+
+/* ============================================================================
+   月度复盘表
+   ========================================================================== */
+async function loadMonth() {
+  const month = curDate.slice(0, 7);
+  const d = await api('api/month-view?month=' + month + '&asof=' + curDate);
+  const tbl = $('#monthTbl');
+  let html = '<tr><th class="rank">排名</th><th class="store">门店</th>';
+  for (let i = 1; i <= d.days_in_month; i++) html += `<th>${i}</th>`;
+  html += '<th>月累计</th><th>月目标</th><th>应达</th><th>缺口</th><th>完成率</th></tr>';
+
+  const todayDay = Number(curDate.slice(8, 10));
+  const lastRank = d.stores.length;
+  for (const s of d.stores) {
+    const rankCls = s.rank === 1 ? 'r1' : (lastRank > 1 && s.rank === lastRank ? 'rx' : '');
+    html += `<tr><td class="rankc ${rankCls}">${s.rank || '--'}</td><th class="store">${esc(s.store_name)}</th>`;
+    for (const day of s.days) {
+      let cls = 'na', txt = '·';
+      if (day.income != null) {
+        const dailyT = s.target_amount > 0 ? s.target_amount / d.days_in_month : 0;
+        const r = dailyT > 0 ? day.income / dailyT : 1;
+        cls = r >= 1 ? 'up' : 'down';
+        txt = Math.round(day.income);
+      }
+      if (day.day === todayDay && day.income != null) cls += ' today';
+      html += `<td class="${cls} dcell">${txt}</td>`;
+    }
+    const rateCls = s.cum_rate != null && s.cum_rate >= 100 ? 'up' : 'down';
+    const gp = s.gap_progress;
+    const gpCls = gp == null ? 'na' : (gp >= 0 ? 'down' : 'up');
+    html += `<td>¥${fmtWan(s.month_cum)}</td>
+             <td>${s.target_amount > 0 ? fmtWan(s.target_amount) : '--'}</td>
+             <td>${s.progress_target > 0 ? '¥' + fmtWan(s.progress_target) : '--'}</td>
+             <td class="${gpCls}">${gp == null ? '--' : (gp >= 0 ? '−¥' + fmtWan(gp) : '+¥' + fmtWan(-gp))}</td>
+             <td class="${s.cum_rate == null ? 'na' : rateCls}">${s.cum_rate == null ? '--' : s.cum_rate + '%'}</td></tr>`;
+  }
+
+  html += '<tr class="sum"><td class="rankc"></td><th class="store">全店合计</th>';
+  let allCum = 0, allT = 0, allProg = 0;
+  for (let i = 1; i <= d.days_in_month; i++) {
+    let sv = 0, has = false;
+    for (const st of d.stores) { const v = st.days[i - 1]; if (v.income != null) { sv += v.income; has = true; } }
+    html += `<td class="dcell">${has ? Math.round(sv) : '·'}</td>`;
+  }
+  for (const st of d.stores) { allCum += st.month_cum; allT += st.target_amount; allProg += (st.target_amount > 0 ? st.progress_target : 0); }
+  const allRate = allT > 0 ? Math.round(allCum / allT * 1000) / 10 : null;
+  const allGap = allProg - allCum;
+  html += `<td>¥${fmtWan(allCum)}</td><td>${fmtWan(allT)}</td><td>¥${fmtWan(allProg)}</td>
+           <td class="${allProg > 0 ? (allGap >= 0 ? 'down' : 'up') : ''}">${allProg > 0 ? (allGap >= 0 ? '−¥' + fmtWan(allGap) : '+¥' + fmtWan(-allGap)) : '--'}</td>
+           <td>${allRate == null ? '--' : allRate + '%'}</td></tr>`;
+  tbl.innerHTML = html;
+}
+
+/* ============================================================================
+   月目标配置
+   ========================================================================== */
+async function loadTargets() {
+  if (!me || me.role !== 'super_admin') return;
+  const month = curDate.slice(0, 7);
+  const d = await api('api/monthly-targets?month=' + month);
+  const stores = await api('api/stores');
+  const map = Object.fromEntries(d.map(t => [t.store_id, t.target_amount]));
+  $('#targetRows').innerHTML = stores.map(s => `
+    <div class="trow"><label>${esc(s.name)}</label>
+    <input type="number" step="100" min="0" data-store="${s.id}" value="${map[s.id] || ''}" placeholder="月目标（元）">
+    </div>`).join('');
+}
+
+$('#saveTargets').addEventListener('click', async () => {
+  const month = curDate.slice(0, 7);
+  for (const inp of document.querySelectorAll('#targetRows input')) {
+    if (inp.value === '') continue;
+    await api('api/monthly-targets', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: Number(inp.dataset.store), month, target_amount: Number(inp.value) })
+    });
+  }
+  showBanner('月目标已保存');
+  await load();
+});
+
+/* ============================================================================
+   登录 / 登出 / 上传
+   ========================================================================== */
+async function doLogin() {
+  const u = $('#loginUser').value.trim(), p = $('#loginPass').value;
+  $('#loginErr').textContent = '';
+  if (!u || !p) { $('#loginErr').textContent = '请输入账号和密码'; return; }
+  const btn = $('#loginBtn');
+  btn.disabled = true; btn.textContent = '登录中…';
+  try {
+    const r = await fetch('api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    if (!r.ok) {
+      let msg = '登录失败';
+      try { const t = await r.json(); if (t && t.error) msg = t.error; } catch (e) {}
+      $('#loginErr').textContent = msg;
+      return;
+    }
+    $('#loginPass').value = '';
+    await load();
+  } catch (e) {
+    $('#loginErr').textContent = '网络错误，请重试';
+  } finally {
+    btn.disabled = false; btn.textContent = '登 录';
+  }
+}
+$('#loginBtn').addEventListener('click', doLogin);
+$('#loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+$('#logoutBtn').addEventListener('click', async () => {
+  try { await fetch('api/logout', { method: 'POST' }); } catch (e) {}
+  me = null; curDate = ''; cmpCache = {};
+  ['#cards', '#rankbar', '#mcum', '#monthTbl', '#cmpGrid', '#kpiBand', '#insightBox', '#contrib'].forEach(sel => { const n = $(sel); if (n) n.innerHTML = ''; });
+  $('#whoami').textContent = '';
+  $('#logoutBtn').style.display = 'none';
+  showLogin();
+});
+
+$('#uploadBtn').addEventListener('click', () => $('#drop').classList.toggle('show'));
+
+$('#fileInput').addEventListener('change', async () => {
+  const files = Array.from($('#fileInput').files || []);
+  if (!files.length) return;
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  const btn = $('#uploadBtn');
+  btn.disabled = true;
+  btn.textContent = files.length > 1 ? `解析 0/${files.length}…` : '解析中…';
+  try {
+    const r = await fetch('api/upload', { method: 'POST', body: fd });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || '上传失败');
+
+    const ok = j.files || [];
+    const bad = j.failed || [];
+    const dates = ok.map(x => x.date).sort();
+    let msg = ok.length === 1
+      ? `已导入 ${ok[0].date}，入库 ${ok[0].inserted} 条。`
+      : `已导入 ${ok.length} 个日期（${dates[0]} ~ ${dates[dates.length - 1]}），共入库 ${j.total_inserted} 条。`;
+    if (bad.length) msg += ` ${bad.length} 个文件失败：${bad.map(b => b.file + '（' + b.error + '）').join('；')}`;
+    showBanner(msg, false);
+    $('#drop').classList.remove('show');
+    $('#fileInput').value = '';
+    await load();
+  } catch (e) {
+    showBanner('上传失败：' + e.message, true);
+  }
+  btn.disabled = false;
+  btn.textContent = '导入报表';
+});
+
+$('#dateInput').addEventListener('change', () => {
+  curDate = $('#dateInput').value || todayStr();
+  cmpCache = {};
+  load();
+});
+
+
+/* 7 / 30 天切换 */
+$('#cmpSeg').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-w]');
+  if (!btn) return;
+  const w = Number(btn.dataset.w);
+  if (w === curWin) return;
+  curWin = w;
+  [...$('#cmpSeg').children].forEach(b => b.classList.toggle('on', b === btn));
+  await ensureCompare(w);
+  await renderCompare();
+});
+
+/* 走势图指标切换：营收 / 单量 / 客单价 */
+$('#metricSeg').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-m]');
+  if (!btn) return;
+  metric = btn.dataset.m;
+  [...$('#metricSeg').children].forEach(b => b.classList.toggle('on', b === btn));
+  const d = cmpCache[curWin];
+  if (d) paintTrend(d);
+});
+
+/* ============================================================================
+   通晒海报：单一群发版，手机竖版（750px 宽，导出 2x）。
+   版式范式（对标移动端 KPI 战报四段式，3 秒读懂）：
+     红头标题 → 超大核心数字（当日营收 + 较前一日变化）→ 门店龙虎榜 → 月度进度 → 品牌尾
+   语义铁律（全图一套，与看板 .delta 红涨绿跌一致）：
+     红 #C0392B / #A81F2E = 涨、超额、领先；绿 #1F7A4D = 跌、缺口。
+   排版铁律：
+     · 最小正文字号 18px，核心数字 92px——手机全屏看仍然清楚
+     · 数据一律进网格 / 行内块，禁止自然断行
+     · 逐日对比基准来自月视图（昨日有数据才算，不编造）
+   ========================================================================== */
+const CH_DOT = { dine: '#0C6B4B', meituan: '#FFC400', taobao: '#1E7BE0', jd: '#E1251B' };
+
+/* 海报金额：整数不带 .00，有零头才保留两位 */
+const fmtMoney = (n) => (n == null ? '—' : fmt(n).replace(/\.00$/, ''));
+
+/* 较前一日变化：红涨绿跌，箭头 + 差额 + 百分比。
+   compact：门店行内空间有限，只留百分比，绝对差额在顶部大区给全量。 */
+function posterDelta(diff, base, compact) {
+  if (diff == null || !base) return '<span class="pd na">较前日 —</span>';
+  const pct = Math.abs((diff / base) * 100);
+  const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'na');
+  const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '—');
+  const sign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
+  if (compact) return `<span class="pd ${cls}">${arrow} 较前日 ${sign}${pct.toFixed(1)}%</span>`;
+  const abs = '¥' + (Math.abs(diff) >= 10000 ? fmtWan(Math.abs(diff)) : fmtMoney(Math.abs(diff)));
+  return `<span class="pd ${cls}">${arrow} 较前日 ${sign}${abs}（${sign}${pct.toFixed(1)}%）</span>`;
+}
+
+/* 缺口三格：正=缺口（绿），负=超额/超前（红），口径见标签 */
+function posterGapCell(label, v, negWord) {
+  if (v == null) return `<div><span>${label}</span><b class="na">--</b></div>`;
+  const good = v <= 0; // 缺口口径：负数 = 超额/超前
+  const word = good ? negWord : '缺口';
+  return `<div><span>${label}</span><b class="${good ? 'up' : 'down'}">${word} ¥${fmtMoney(Math.abs(v))}</b></div>`;
+}
+
+/* 月度逐日趋势图：全店合计粗线 + 门店细线 + 日均目标虚线。
+   缺数据断开不补 0（与看板 lineOf 同逻辑）；html2canvas 对简单 SVG 支持可靠。 */
+function posterTrendSvg(mv, colorMap, curDay) {
+  const n = mv.days_in_month;
+  const W = 1168, H = 320, padL = 58, padR = 16, padT = 34, padB = 36;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+
+  const totals = Array.from({ length: n }, (_, i) => {
+    let s = 0, has = false;
+    for (const st of mv.stores) {
+      const v = st.days[i];
+      if (v && v.income != null) { s += v.income; has = true; }
+    }
+    return has ? s : null;
+  });
+  const targetDaily = mv.stores.reduce((a, st) => a + (st.target_amount ? st.target_amount / mv.days_in_month : 0), 0);
+
+  const dataMax = Math.max(targetDaily, ...totals.filter(v => v != null));
+  const maxY = dataMax * 1.15;
+  const step = [500, 1000, 2000, 2500, 3000, 4000, 5000].find(s => maxY / s <= 4.5) || 5000;
+  const x = i => padL + i * (innerW / (n - 1));
+  const y = v => padT + (1 - v / maxY) * innerH;
+  const f1 = v => Number(v.toFixed(1));
+
+  const tickFmt = v => v === 0 ? '0'
+    : (v >= 10000 ? (v / 10000).toFixed(1).replace(/\.0$/, '') + '万'
+      : (v / 1000).toFixed(1).replace(/\.0$/, '') + '千');
+
+  /* 网格 + y 轴刻度 */
+  let g = '';
+  for (let v = 0; v <= maxY; v += step) {
+    g += `<line x1="${padL}" y1="${f1(y(v))}" x2="${W - padR}" y2="${f1(y(v))}" stroke="rgba(38,34,24,${v === 0 ? '.18' : '.08'})" stroke-width="1"/>`
+      + `<text x="${padL - 8}" y="${f1(y(v) + 5)}" text-anchor="end" font-size="14" fill="#94907F">${tickFmt(v)}</text>`;
+  }
+  /* x 轴刻度：稀疏标注 */
+  for (const dNum of [1, 5, 10, 15, 20, 25, 30]) {
+    if (dNum > n) continue;
+    g += `<text x="${f1(x(dNum - 1))}" y="${H - 12}" text-anchor="middle" font-size="14" fill="#94907F">${dNum}日</text>`;
+  }
+  /* 当日列淡金底带 */
+  g += `<rect x="${f1(x(curDay - 1) - 8)}" y="${padT}" width="16" height="${f1(innerH)}" fill="rgba(169,128,58,.10)"/>`;
+  /* 日均目标虚线 */
+  g += `<line x1="${padL}" y1="${f1(y(targetDaily))}" x2="${W - padR}" y2="${f1(y(targetDaily))}" stroke="#8A8676" stroke-width="2" stroke-dasharray="7 5"/>`
+    + `<text x="${W - padR}" y="${f1(y(targetDaily) - 8)}" text-anchor="end" font-size="15" fill="#8A8676">日均目标 ¥${fmtInt(targetDaily)}</text>`;
+
+  /* 门店细线（缺数据断开） */
+  const line = (vals, color, width) => {
+    const runs = [];
+    let run = [];
+    vals.forEach((v, i) => {
+      if (v == null) { if (run.length) { runs.push(run); run = []; } }
+      else run.push([i, v]);
+    });
+    if (run.length) runs.push(run);
+    return runs.map(r => {
+      if (r.length === 1) {
+        const [i, v] = r[0];
+        return `<circle cx="${f1(x(i))}" cy="${f1(y(v))}" r="3" fill="${color}"/>`;
+      }
+      const pts = r.map(([i, v]) => `${f1(x(i))},${f1(y(v))}`).join(' ');
+      return `<polyline fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/>`;
+    }).join('');
+  };
+  for (const st of mv.stores) {
+    const vals = st.days.map(d2 => (d2 && d2.income != null) ? d2.income : null);
+    g += line(vals, colorMap[st.store_name] || '#94907F', 3);
+  }
+  /* 全店合计：淡红面积 + 粗线 */
+  const have = totals.map((v, i) => ({ v, i })).filter(p => p.v != null);
+  if (have.length) {
+    const pts = have.map(p => `${f1(x(p.i))},${f1(y(p.v))}`).join(' ');
+    const area = `${padL},${f1(y(0))} ${pts} ${f1(x(have[have.length - 1].i))},${f1(y(0))}`;
+    g += `<polygon points="${area}" fill="rgba(168,31,46,.07)"/>`;
+    g += `<polyline fill="none" stroke="#A81F2E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/>`;
+    const last = have[have.length - 1];
+    /* 数值标注放末点右侧空白区（末点后剩余天数多时），避免压在曲线上 */
+    const roomRight = (n - 1 - last.i) > 6;
+    const lx = roomRight ? f1(x(last.i) + 12) : f1(x(last.i) - 12);
+    g += `<circle cx="${f1(x(last.i))}" cy="${f1(y(last.v))}" r="6" fill="#A81F2E"/>`
+      + `<text x="${lx}" y="${f1(y(last.v) + 6)}" text-anchor="${roomRight ? 'start' : 'end'}" font-size="20" font-weight="800" fill="#A81F2E">¥${fmtWan(last.v)}</text>`;
+  }
+  return `<svg class="pt-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+
+/* 月度复盘表（横版，同旧版参考图形式）：排名+门店为行（第1/2/3名各一排），
+   日期 1..N 为列（当日列金高亮），行尾三列 = 月度累计营收 / 总缺口 / 完成率（整月目标口径），
+   底部全店合计行。海报宽 1080px 下每列约 26px，四位数字可分辨 */
+function posterTrendTable(mv, curDay) {
+  const lastRank = mv.stores.length;
+  const n = mv.days_in_month;
+  let head = `<thead><tr><th class="h-rank">排名</th><th class="h-store">门店</th>`;
+  for (let i = 0; i < n; i++) head += `<th class="${i + 1 === curDay ? 'cur' : ''}">${i + 1}</th>`;
+  head += `<th class="h-m">月度累计营收</th><th class="h-m">总缺口</th><th class="h-m">完成率</th></tr></thead>`;
+
+  const gapTxt = (tar, cum) => {
+    const g = (tar || 0) - (cum || 0);
+    return `<td class="${g >= 0 ? 'v-down' : 'v-up'}">${g >= 0 ? '¥' + fmtWan(g) : '超额 ¥' + fmtWan(-g)}</td>`;
+  };
+  const rateTxt = r => `<td class="${r == null ? '' : (r >= 100 ? 'v-up' : 'v-down')}">${r == null ? '--' : r + '%'}</td>`;
+
+  let body = '';
+  for (const st of mv.stores) {
+    const rc = st.rank === 1 ? ' r1' : (lastRank > 1 && st.rank === lastRank ? ' rx' : '');
+    body += `<tr><td class="rankc${rc}">${st.rank ? '第' + st.rank + '名' : '--'}</td><td class="storec">${esc(st.store_name)}</td>`;
+    for (let i = 0; i < n; i++) {
+      const v = st.days[i];
+      body += v && v.income != null
+        ? `<td class="${i + 1 === curDay ? 'cur' : ''}">${Math.round(v.income)}</td>`
+        : '<td class="na">·</td>';
+    }
+    body += `<td class="m">¥${fmtWan(st.month_cum)}</td>${gapTxt(st.target_amount, st.month_cum)}${rateTxt(st.cum_rate)}</tr>`;
+  }
+
+  /* 全店合计行 */
+  const totalCum = mv.stores.reduce((a, st) => a + (st.month_cum || 0), 0);
+  const totalTar = mv.stores.reduce((a, st) => a + (st.target_amount || 0), 0);
+  const totalRate = totalTar > 0 ? Math.round(totalCum / totalTar * 1000) / 10 : null;
+  body += `<tr class="tsum"><td></td><td class="storec">全店合计</td>`;
+  for (let i = 0; i < n; i++) {
+    let s = 0, has = false;
+    for (const st of mv.stores) {
+      const v = st.days[i];
+      if (v && v.income != null) { s += v.income; has = true; }
+    }
+    body += has ? `<td class="${i + 1 === curDay ? 'cur' : ''}">${Math.round(s)}</td>` : '<td class="na">·</td>';
+  }
+  body += `<td class="m">¥${fmtWan(totalCum)}</td>${gapTxt(totalTar, totalCum)}${rateTxt(totalRate)}</tr>`;
+
+  return `<table class="pt-tbl">${head}<tbody>${body}</tbody></table>`;
+}
+
+
+function buildPosterHtml(d, mv) {
+  const y = curDate.slice(0, 4), m = Number(curDate.slice(5, 7)), dd = Number(curDate.slice(8, 10));
+  const dl = dayLabel();
+  const ddNum = Number(curDate.slice(8, 10));
+
+  /* 昨日基准：月视图逐日数据（昨日无数据则该项显示 —，不编造） */
+  const yIn = {};
+  if (ddNum > 1 && mv && mv.stores) {
+    for (const st of mv.stores) {
+      const cell = st.days[ddNum - 2];
+      if (cell && cell.income != null) yIn[st.store_name] = cell.income;
+    }
+  }
+
+  const sum = (fn) => d.stores.reduce((a, s) => a + fn(s), 0);
+  const todayIncome = sum(s => s.today_income);
+  const todayOrders = sum(s => s.today_orders);
+  const targetDaily = sum(s => s.target_daily || 0);
+  const dayRate = targetDaily > 0 ? Math.round((todayIncome / targetDaily) * 1000) / 10 : null;
+  const ticket = todayOrders > 0 ? todayIncome / todayOrders : null;
+  const yTotal = d.stores.reduce((a, s) => a + (yIn[s.store_name] || 0), 0);
+  const totalDiff = yTotal > 0 ? todayIncome - yTotal : null;
+  const okStores = d.stores.filter(s => s.day_rate != null && s.day_rate >= 100).length;
+  const rateCls = dayRate == null ? 'na' : (dayRate >= 100 ? 'up' : 'down');
+  const rateWord = dayRate == null ? '未设目标' : (dayRate >= 100 ? '超额' : '缺口');
+
+  /* ---- 头部 + 核心数字区 ---- */
+  const hero = `
+    <div class="p-head">
+      <div class="ph-main">
+        <h1>于百万 · 业绩通晒</h1>
+        <div class="p-date">${y}年${m}月${dd}日 ${dl} · 全店营业收入</div>
+      </div>
+      <div class="p-slogan"><span>生意做遍</span><span>不如卖面</span></div>
+    </div>
+    <div class="p-hero">
+      <div class="ph-l">
+        <span class="ph-label">${dl}全店营收</span>
+        <div class="ph-num">¥${fmtWan(todayIncome)}</div>
+        ${posterDelta(totalDiff, yTotal)}
+      </div>
+      <div class="ph-r">
+        <span>目标完成</span>
+        <b class="${rateCls}">${dayRate == null ? '--' : dayRate + '%'}</b>
+        <i>${rateWord} ¥${fmtWan(Math.abs(todayIncome - targetDaily))} / 目标 ¥${fmtWan(targetDaily)}</i>
+      </div>
+      <div class="ph-stats">
+        <div><span>总单量</span><b>${fmtInt(todayOrders)} 单</b></div>
+        <div><span>客单价</span><b>¥${ticket == null ? '--' : fmtMoney(ticket)}</b></div>
+        <div><span>达标门店</span><b>${okStores}/${d.stores.length}</b></div>
+        <div><span>${m}月进度</span><b>${mv && mv.totals && mv.totals.cum_progress_rate != null ? mv.totals.cum_progress_rate + '%' : '—'}</b></div>
+      </div>
+    </div>`;
+
+  /* ---- 门店龙虎榜：按完成率排名，一店一行卡 ---- */
+  const pStores = [...d.stores].sort((a, b) => (b.day_rate ?? -1) - (a.day_rate ?? -1));
+  const rankOf = {};
+  d.ranking.forEach(r => { rankOf[r.store_name] = r.rank; });
+  const best = d.ranking.find(r => r.rank === 1);
+  const worst = d.ranking.find(r => r.rank === d.ranking.length && d.ranking.length > 1);
+
+  const chCell = (dot, name, income) => `
+    <div class="pch">
+      <span><i style="background:${dot}"></i>${name}</span>
+      <b>¥${fmtMoney(income)}</b>
+    </div>`;
+
+  const cards = pStores.map((s, i) => {
+    const rank = rankOf[s.store_name] || (i + 1);
+    const ok = s.day_rate != null && s.day_rate >= 100;
+    const rCls = s.day_rate == null ? 'na' : (ok ? 'up' : 'down');
+    const isBest = best && s.store_name === best.store_name;
+    const isWorst = worst && s.store_name === worst.store_name;
+    const yv = yIn[s.store_name];
+    const diff = yv != null ? s.today_income - yv : null;
+    const t = s.today_orders > 0 ? s.today_income / s.today_orders : null;
+    const barW = s.day_rate == null ? 0 : Math.min(100, s.day_rate);
+    return `
+    <div class="pr${isBest ? ' best' : ''}${isWorst ? ' worst' : ''}">
+      <div class="pr-top">
+        <span class="pr-no">${rank}</span>
+        <b class="pr-name">${esc(s.store_name)}</b>
+        ${isBest ? '<span class="pr-ribbon rb">★ 最佳</span>' : ''}
+        ${isWorst ? '<span class="pr-ribbon rw">↓ 需加油</span>' : ''}
+        <b class="pr-amt">¥${fmtMoney(s.today_income)}</b>
+      </div>
+      <div class="pr-sub">
+        <b class="pr-rate ${rCls}">完成率 ${s.day_rate == null ? '--' : s.day_rate + '%'}</b>
+        ${posterDelta(diff, yv, true)}
+        <span class="pr-meta">${fmtInt(s.today_orders)} 单 · 客单 ¥${t == null ? '--' : fmtMoney(t)}</span>
+      </div>
+      <div class="pr-gaps">
+        ${posterGapCell('昨日', s.gap_today, '超额')}
+        ${posterGapCell('按进度', s.gap_progress, '超前')}
+        ${posterGapCell('整月', s.gap_month, '超额')}
+      </div>
+      <div class="pr-ch">
+        ${chCell(CH_DOT.dine, '堂食', s.today.dine_in.income)}
+        ${chCell(CH_DOT.meituan, '美团', s.today.meituan.income)}
+        ${chCell(CH_DOT.taobao, '淘闪', s.today.taobao_flash.income)}
+        ${chCell(CH_DOT.jd, '京东', s.today.jd.income)}
+      </div>
+      <div class="pr-bar"><i class="${rCls}" style="width:${barW}%"></i>${s.day_rate != null && s.day_rate < 100 ? '<span style="left:100%"></span>' : ''}</div>
+    </div>`;
+  }).join('');
+
+  /* ---- 月度逐日趋势 + 复盘表（月度累计/总缺口/完成率只在表后汇总小表出现一次） ---- */
+  let review = '';
+  if (mv && mv.stores && mv.stores.length) {
+    const curDay = Number(curDate.slice(8, 10));
+    const colorMap = {};
+    d.stores.forEach((s, i) => { colorMap[s.store_name] = STORE_COLORS[i % STORE_COLORS.length]; });
+    const targetDaily2 = mv.stores.reduce((a, st) => a + (st.target_amount ? st.target_amount / mv.days_in_month : 0), 0);
+    review = `
+    <div class="p-sec">${m}月逐日复盘 · 全店营业收入</div>
+    <div class="p-review">
+      <div class="pt-legend">
+        <span><i style="background:#A81F2E"></i>全店合计</span>
+        ${d.stores.map(s => `<span><i style="background:${colorMap[s.store_name]}"></i>${esc(s.store_name)}</span>`).join('')}
+        <span><i class="dash"></i>日均目标 ¥${fmtInt(targetDaily2)}</span>
+      </div>
+      ${posterTrendSvg(mv, colorMap, Math.min(curDay, mv.days_in_month))}
+      ${posterTrendTable(mv, Math.min(curDay, mv.days_in_month))}
+    </div>`;
+  }
+
+  return `
+    ${hero}
+    <div class="p-sec">${dl}门店排行 · 按完成率</div>
+    <div class="p-body">${cards}</div>
+    ${review}
+    <div class="p-foot">
+      <b>于百万 · 炸串拌面</b>
+      <em>生意做遍 · 不如卖面</em>
+      <span>于百万数据追踪 · 每日通晒</span>
+    </div>`;
+}
+
+async function exportPoster() {
+  const btn = $('#posterBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  try {
+    const d = dash || await api('api/dashboard?date=' + curDate);
+    if (!d.ranking.length) { showBanner(dayLabel() + '无数据，无法生成海报', true); return; }
+    const mv = await api('api/month-view?month=' + d.month + '&asof=' + curDate);
+
+    const p = $('#poster');
+    p.className = 'p-group';
+    p.innerHTML = buildPosterHtml(d, mv);
+
+    const canvas = await html2canvas(p, {
+      scale: 2,
+      backgroundColor: '#F7F5F1',
+      useCORS: true
+    });
+    const a = document.createElement('a');
+    a.download = `于百万_业绩通晒_${curDate}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    showBanner('通晒海报已生成并下载');
+  } catch (e) {
+    showBanner('海报生成失败：' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '通晒海报';
+  }
+}
+
+$('#posterBtn').addEventListener('click', () => {
+  if (!dash) return;
+  exportPoster();
+});
+
+/* 启动 */
+(async function init() { await load(); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>于百万·QSC管理系统 · 账号管理</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app" style="padding-bottom:24px;">
+  <div class="topbar">
+    <a class="back" id="backBtn">‹</a>
+    <div class="tt">账号与权限</div>
+    <span class="mode">项目负责人</span>
+  </div>
+
+  <div class="summary" style="display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-size:15px;font-weight:700;">员工账号</div>
+      <div class="field-label" style="margin:4px 0 0;">登录后才可填报 QSC 报告</div>
+    </div>
+    <button class="btn"  id="addBtn">新增账号</button>
+  </div>
+
+  <div class="summary" id="userList"></div>
+</div>
+
+<div class="modal-mask" id="modalMask" style="display:none;">
+  <div class="modal">
+    <h3 id="modalTitle">新增账号</h3>
+    <div class="form-group">
+      <label>登录账号</label>
+      <input class="text-input" id="fUsername" placeholder="如 dyz_emp">
+    </div>
+    <div class="form-group">
+      <label id="pwLabel">初始密码</label>
+      <input class="text-input" id="fPassword" placeholder="请输入密码">
+    </div>
+    <div class="form-group">
+      <label>姓名</label>
+      <input class="text-input" id="fRealName" placeholder="员工真实姓名">
+    </div>
+    <div class="form-group">
+      <label>角色</label>
+      <select class="text-input" id="fRole">
+        <option value="employee">员工（填报本门店）</option>
+        <option value="manager">店长（管理本门店）</option>
+        <option value="super_admin">项目负责人（全部门店）</option>
+      </select>
+    </div>
+    <div class="form-group" id="storeGroup">
+      <label>所属门店</label>
+      <select class="text-input" id="fStore"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelBtn">取消</button>
+      <button class="btn"  id="saveUserBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+let users = [], stores = [], editingId = null;
+const roleNames = { super_admin: '项目负责人', manager: '店长', employee: '员工' };
+
+document.getElementById('backBtn').onclick = () => location.href = '/';
+document.getElementById('addBtn').onclick = () => openModal(null);
+document.getElementById('cancelBtn').onclick = closeModal;
+document.getElementById('fRole').onchange = toggleStore;
+
+async function load() {
+  const me = await getMe();
+  if (!me || me.role !== 'super_admin') { location.href = '/login.html'; return; }
+  users = await api('/api/admin/users');
+  stores = await api('/api/admin/stores');
+  const storeSel = document.getElementById('fStore');
+  storeSel.innerHTML = stores.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  renderUsers();
+}
+
+function renderUsers() {
+  const list = document.getElementById('userList');
+  list.innerHTML = '';
+  users.forEach(u => {
+    const row = document.createElement('div');
+    row.className = 'user-row';
+    row.innerHTML = `
+      <div style="flex:1;">
+        <div class="uname">${u.username}
+          <span class="role-badge ${u.role}">${roleNames[u.role]}</span>
+          ${u.active ? '' : '<span class="inactive-flag">已停用</span>'}
+        </div>
+        <div class="sub">${u.real_name || '未填姓名'} · ${u.store_name || '全部门店'}</div>
+        <div class="user-actions">
+          <button class="mini" data-edit>编辑</button>
+          <button class="mini" data-pw>重置密码</button>
+          <button class="mini danger" data-toggle>${u.active ? '停用' : '启用'}</button>
+        </div>
+      </div>`;
+    row.querySelector('[data-edit]').onclick = () => openModal(u);
+    row.querySelector('[data-pw]').onclick = () => resetPassword(u);
+    row.querySelector('[data-toggle]').onclick = () => toggleActive(u);
+    list.appendChild(row);
+  });
+}
+
+function toggleStore() {
+  document.getElementById('storeGroup').style.display =
+    document.getElementById('fRole').value === 'super_admin' ? 'none' : 'block';
+}
+
+function openModal(u) {
+  editingId = u ? u.id : null;
+  document.getElementById('modalTitle').textContent = u ? '编辑账号' : '新增账号';
+  document.getElementById('pwLabel').textContent = u ? '新密码（留空则不修改）' : '初始密码';
+  document.getElementById('fUsername').value = u ? u.username : '';
+  document.getElementById('fUsername').disabled = !!u;
+  document.getElementById('fPassword').value = '';
+  document.getElementById('fRealName').value = u ? u.real_name : '';
+  document.getElementById('fRole').value = u ? u.role : 'employee';
+  if (u && u.store_id) document.getElementById('fStore').value = u.store_id;
+  toggleStore();
+  document.getElementById('modalMask').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('modalMask').style.display = 'none'; }
+
+document.getElementById('saveUserBtn').onclick = async () => {
+  const role = document.getElementById('fRole').value;
+  const storeId = document.getElementById('fStore').value;
+  const password = document.getElementById('fPassword').value;
+  if (editingId) {
+    const body = {
+      real_name: document.getElementById('fRealName').value,
+      role, store_id: storeId
+    };
+    if (password) body.password = password;
+    try {
+      await api(`/api/admin/users/${editingId}`, { method: 'POST', body: JSON.stringify(body) });
+      toast('已保存', 1200); closeModal(); load();
+    } catch (e) { toast(e.message); }
+  } else {
+    const username = document.getElementById('fUsername').value.trim();
+    if (!username || !password) { toast('账号和密码必填'); return; }
+    try {
+      await api('/api/admin/users', { method: 'POST', body: JSON.stringify({
+        username, password,
+        real_name: document.getElementById('fRealName').value,
+        role, store_id: storeId
+      })});
+      toast('账号已创建', 1200); closeModal(); load();
+    } catch (e) { toast(e.message); }
+  }
+};
+
+async function resetPassword(u) {
+  const pw = prompt(`为账号 ${u.username} 设置新密码`);
+  if (!pw) return;
+  try {
+    await api(`/api/admin/users/${u.id}`, { method: 'POST', body: JSON.stringify({ password: pw }) });
+    toast('密码已重置', 1200);
+  } catch (e) { toast(e.message); }
+}
+
+async function toggleActive(u) {
+  try {
+    await api(`/api/admin/users/${u.id}`, { method: 'POST', body: JSON.stringify({ active: u.active ? 0 : 1 }) });
+    load();
+  } catch (e) { toast(e.message); }
+}
+
+load();
+</script>
+</body>
+</html>

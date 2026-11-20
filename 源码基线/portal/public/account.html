@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161A" media="(prefers-color-scheme: dark)">
+<title>于百万 · 账号管理</title>
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="back" href="/">
+      <svg viewBox="0 0 24 24"><path d="M19 12H6"/><path d="M12 18l-6-6 6-6"/></svg>
+      工作台
+    </a>
+    <div class="title">账号管理</div>
+    <div class="count" id="countText"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>全部账号</h2>
+        <div class="hint">账号为三个工具统一使用，修改后立即生效</div>
+      </div>
+      <button class="btn btn-primary" id="btnNew" type="button">新增账号</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>账号</th><th>姓名</th><th>角色</th><th>门店</th><th>状态</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td colspan="6" class="empty">正在加载…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div class="mask" id="mask" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h3 id="modalTitle">新增账号</h3>
+      <p id="modalSub">账号密码由管理员设置，员工无需自行注册</p>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="fUsername">账号</label>
+        <input id="fUsername" type="text" autocomplete="off" placeholder="登录用账号，字母或拼音">
+      </div>
+      <div class="field">
+        <label for="fRealName">姓名</label>
+        <input id="fRealName" type="text" autocomplete="off" placeholder="真实姓名">
+      </div>
+      <div class="field">
+        <label for="fRole">角色</label>
+        <select id="fRole">
+          <option value="manager">店长</option>
+          <option value="employee">店员</option>
+          <option value="super_admin">项目负责人</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fStore">门店归属</label>
+        <select id="fStore">
+          <option value="">不限门店</option>
+          <option value="dyz">大悦城店</option>
+          <option value="rt">日坛店</option>
+          <option value="jz">金盏店</option>
+          <option value="wj">望京店</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fPassword" id="pwdLabel">密码</label>
+        <input id="fPassword" type="password" autocomplete="new-password" placeholder="设置登录密码">
+        <div class="note" id="pwdNote">至少 6 位，建议字母加数字</div>
+      </div>
+      <div class="field" id="activeField" hidden>
+        <label for="fActive">状态</label>
+        <select id="fActive">
+          <option value="1">启用</option>
+          <option value="0">停用</option>
+        </select>
+      </div>
+    </div>
+    <div class="msg" id="modalMsg" role="alert" aria-live="polite"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btnCancel" type="button">取消</button>
+      <button class="btn btn-primary" id="btnSave" type="button">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+var ROLE_LABEL = { super_admin: '项目负责人', manager: '店长', employee: '店员' };
+var ROLE_CLASS = { super_admin: 'tag-super', manager: 'tag-manager', employee: 'tag-employee' };
+var STORE_LABEL = { dyz: '大悦城店', rt: '日坛店', jz: '金盏店', wj: '望京店' };
+
+var users = [];
+var editingId = null;
+
+function el(id) { return document.getElementById(id); }
+
+function toast(msg) {
+  var t = el('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+}
+
+function storeText(code) {
+  if (!code) return '—';
+  return STORE_LABEL[code] || code;
+}
+
+function render() {
+  var rows = users.map(function (u) {
+    var roleTag = '<span class="tag ' + (ROLE_CLASS[u.role] || '') + '">' + (ROLE_LABEL[u.role] || u.role) + '</span>';
+    var stateTag = u.active
+      ? '<span class="tag tag-on">启用</span>'
+      : '<span class="tag tag-off">停用</span>';
+    return '<tr>' +
+      '<td class="uname">' + u.username + '</td>' +
+      '<td class="realname">' + (u.real_name || '—') + '</td>' +
+      '<td>' + roleTag + '</td>' +
+      '<td>' + storeText(u.store_code) + '</td>' +
+      '<td>' + stateTag + '</td>' +
+      '<td><div class="ops">' +
+        '<button class="btn btn-ghost btn-sm" data-act="edit" data-id="' + u.id + '">编辑</button>' +
+        '<button class="btn btn-ghost btn-sm" data-act="toggle" data-id="' + u.id + '">' + (u.active ? '停用' : '启用') + '</button>' +
+        '<button class="btn btn-danger btn-sm" data-act="del" data-id="' + u.id + '">删除</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+  el('rows').innerHTML = rows || '<tr><td colspan="6" class="empty">暂无账号</td></tr>';
+  el('countText').textContent = '共 ' + users.length + ' 个账号';
+}
+
+function loadUsers() {
+  fetch('/api/admin/users', { credentials: 'same-origin' })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.ok) { users = j.users || []; render(); }
+      else if (j && j.error) { el('rows').innerHTML = '<tr><td colspan="6" class="empty">' + j.error + '</td></tr>'; }
+    })
+    .catch(function () {
+      el('rows').innerHTML = '<tr><td colspan="6" class="empty">加载失败，请刷新重试</td></tr>';
+    });
+}
+
+function openModal(mode, u) {
+  editingId = mode === 'edit' ? u.id : null;
+  el('modalTitle').textContent = mode === 'edit' ? '编辑账号' : '新增账号';
+  el('modalSub').textContent = mode === 'edit' ? '修改后立即生效，正在使用该账号的人下次请求即按新权限判断' : '账号密码由管理员设置，员工无需自行注册';
+  el('modalMsg').textContent = '';
+  el('fUsername').value = mode === 'edit' ? u.username : '';
+  el('fRealName').value = mode === 'edit' ? (u.real_name || '') : '';
+  el('fRole').value = mode === 'edit' ? u.role : 'manager';
+  el('fStore').value = mode === 'edit' ? (u.store_code || '') : '';
+  el('fPassword').value = '';
+  el('fActive').value = mode === 'edit' ? String(u.active) : '1';
+  el('activeField').hidden = mode !== 'edit';
+  el('pwdLabel').textContent = mode === 'edit' ? '修改密码（留空则不修改）' : '密码';
+  el('pwdNote').textContent = mode === 'edit' ? '留空表示沿用原密码' : '至少 6 位，建议字母加数字';
+  el('mask').hidden = false;
+  setTimeout(function () { el('fUsername').focus(); }, 100);
+}
+
+function closeModal() { el('mask').hidden = true; }
+
+function save() {
+  var username = el('fUsername').value.trim();
+  var real_name = el('fRealName').value.trim();
+  var role = el('fRole').value;
+  var store_code = el('fStore').value;
+  var password = el('fPassword').value;
+  var active = Number(el('fActive').value);
+  el('modalMsg').textContent = '';
+
+  if (!username) { el('modalMsg').textContent = '请填写账号'; return; }
+  if (editingId === null && !password) { el('modalMsg').textContent = '请设置密码'; return; }
+  if (password && password.length < 6) { el('modalMsg').textContent = '密码至少 6 位'; return; }
+
+  var url = editingId === null ? '/api/admin/users' : '/api/admin/users/update';
+  var payload = { username: username, real_name: real_name, role: role, store_code: store_code || null };
+  if (editingId === null) {
+    payload.password = password;
+  } else {
+    payload.id = editingId;
+    payload.active = active;
+    if (password) payload.password = password;
+  }
+
+  el('btnSave').disabled = true;
+  el('btnSave').textContent = '保存中…';
+  fetch(url, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.ok) {
+        var wasNew = editingId === null;
+        closeModal();
+        toast(wasNew ? '账号已创建' : '账号已更新');
+        loadUsers();
+      } else {
+        el('modalMsg').textContent = (j && j.error) || '保存失败';
+      }
+    })
+    .catch(function () { el('modalMsg').textContent = '网络异常，请重试'; })
+    .then(function () {
+      el('btnSave').disabled = false;
+      el('btnSave').textContent = '保存';
+    });
+}
+
+function toggleUser(id) {
+  var u = users.filter(function (x) { return x.id === id; })[0];
+  if (!u) return;
+  fetch('/api/admin/users/update', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id, active: u.active ? 0 : 1 })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.ok) { toast(u.active ? '账号已停用' : '账号已启用'); loadUsers(); }
+      else toast((j && j.error) || '操作失败');
+    })
+    .catch(function () { toast('网络异常'); });
+}
+
+function deleteUser(id) {
+  var u = users.filter(function (x) { return x.id === id; })[0];
+  if (!u) return;
+  if (!confirm('确认删除账号「' + u.username + '」？删除后该账号立即无法登录。')) return;
+  fetch('/api/admin/users/delete', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id })
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.ok) { toast('账号已删除'); loadUsers(); }
+      else toast((j && j.error) || '删除失败');
+    })
+    .catch(function () { toast('网络异常'); });
+}
+
+el('rows').addEventListener('click', function (e) {
+  var btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  var id = Number(btn.getAttribute('data-id'));
+  var act = btn.getAttribute('data-act');
+  var u = users.filter(function (x) { return x.id === id; })[0];
+  if (!u) return;
+  if (act === 'edit') openModal('edit', u);
+  else if (act === 'toggle') toggleUser(id);
+  else if (act === 'del') deleteUser(id);
+});
+
+el('btnNew').addEventListener('click', function () {
+  openModal('new', { username: '', real_name: '', role: 'manager', store_code: '', active: 1 });
+});
+el('btnCancel').addEventListener('click', closeModal);
+el('btnSave').addEventListener('click', save);
+el('mask').addEventListener('click', function (e) { if (e.target === el('mask')) closeModal(); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && !el('mask').hidden) closeModal();
+});
+
+// 进入页面先确认身份，非超管直接退回工作台
+fetch('/api/me', { credentials: 'same-origin' })
+  .then(function (r) { return r.ok ? r.json() : null; })
+  .then(function (j) {
+    if (!j || !j.ok) { location.href = '/'; return; }
+    if (j.role !== 'super_admin') { location.href = '/'; return; }
+    loadUsers();
+  })
+  .catch(function () { location.href = '/'; });
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "shop-performance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "于百万·外卖业绩通晒系统（Excel 上传解析版）：三平台营业数据入库、目标差值计算、VI 通晒海报生成",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.19.2",
+    "multer": "^2.5.0",
+    "xlsx": "^0.18.5"
+  }
+}

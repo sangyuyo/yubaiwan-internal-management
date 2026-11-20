@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>于百万·QSC管理系统 · 清洁报告</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app" style="padding-bottom:0;">
+  <div class="topbar">
+    <a class="back" id="backBtn">‹</a>
+    <div class="tt" id="formTitle">清洁报告</div>
+    <span class="mode" id="modeTag"></span>
+  </div>
+
+  <div class="date-bar">
+    <button class="nav-date" id="prevDay">‹</button>
+    <input type="date" id="dateInput">
+    <button class="nav-date" id="nextDay">›</button>
+  </div>
+
+  <div id="loginTip" class="readonly-tip" style="display:none;">
+    公示页面，仅可查看。门店或员工账号登录后可填写、上传照片。
+  </div>
+
+  <div class="summary">
+    <div class="progress-text">
+      <span>完成进度</span>
+      <span id="progressText">0 / 0</span>
+    </div>
+    <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div id="itemsWrap"></div>
+
+  <div class="summary">
+    <div class="field-label" style="margin-bottom:8px;">检查负责人</div>
+    <input class="text-input" id="inspector" placeholder="请输入负责人姓名" style="margin-bottom:12px;">
+    <div id="notesBox">
+      <div class="field-label" style="margin-bottom:8px;">备注说明</div>
+      <textarea class="text-input" id="notes" rows="2" placeholder="异常情况或补充说明（选填）"></textarea>
+    </div>
+  </div>
+
+  <div class="save-bar" id="saveBar">
+    <button class="btn btn-ghost" id="backBtn2" type="button">返回</button>
+    <button class="btn btn-block" id="saveBtn" type="button">保存记录</button>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+const code = qs('code');
+const formCode = qs('form');
+let currentDate = qs('date') || todayStr();
+let state = { items: [], inspector_name: '', notes: '' };
+let me = null;
+let storeId = null;
+const isSuper = () => me && me.role === 'super_admin';
+
+// ===== 本地草稿缓存（按门店+表单+日期隔离）=====
+const draftKey = () => `qsc_draft_${code}_${formCode}_${currentDate}`;
+function saveDraft() {
+  try {
+    const payload = {
+      inspector_name: document.getElementById('inspector').value,
+      notes: document.getElementById('notes').value,
+      items: state.items.map(i => ({
+        item_id: i.item_id, is_done: i.is_done,
+        cleaner_name: i.cleaner_name, photo_path: i.photo_path
+      }))
+    };
+    localStorage.setItem(draftKey(), JSON.stringify(payload));
+  } catch (e) {}
+}
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(draftKey());
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearDraft() {
+  try { localStorage.removeItem(draftKey()); } catch (e) {}
+}
+function applyDraft(d) {
+  const byId = {};
+  (d.items || []).forEach(x => { byId[x.item_id] = x; });
+  state.items.forEach(it => {
+    const x = byId[it.item_id];
+    if (x) {
+      it.is_done = x.is_done ? 1 : 0;
+      it.cleaner_name = x.cleaner_name || '';
+      it.photo_path = x.photo_path || '';
+    }
+  });
+  if (typeof d.inspector_name === 'string') {
+    document.getElementById('inspector').value = d.inspector_name;
+  }
+  if (typeof d.notes === 'string') {
+    document.getElementById('notes').value = d.notes;
+  }
+}
+// 用登录账号的真实姓名预填责任人（仅在空白时）
+function applyCurrentUserName() {
+  const name = me && me.real_name ? me.real_name : '';
+  if (!name) return;
+  state.items.forEach(it => { if (!it.cleaner_name) it.cleaner_name = name; });
+  if (!document.getElementById('inspector').value) {
+    document.getElementById('inspector').value = name;
+  }
+}
+
+const formNames = { daily: '每日清洁报告', weekly: '每周深度清洁', monthly: '月度清洁追踪' };
+document.getElementById('formTitle').textContent = formNames[formCode] || '清洁报告';
+
+document.getElementById('backBtn').onclick = goBack;
+document.getElementById('backBtn2').onclick = goBack;
+function goBack() { location.href = `/s/${code}`; }
+
+document.getElementById('dateInput').value = currentDate;
+document.getElementById('dateInput').onchange = e => { currentDate = e.target.value; load(); };
+document.getElementById('prevDay').onclick = () => { currentDate = shiftDate(currentDate, -1); document.getElementById('dateInput').value = currentDate; load(); };
+document.getElementById('nextDay').onclick = () => { currentDate = shiftDate(currentDate, 1); document.getElementById('dateInput').value = currentDate; load(); };
+document.getElementById('inspector').oninput = saveDraft;
+document.getElementById('notes').oninput = saveDraft;
+
+async function load() {
+  // 加载中先给骨架，避免一屏空白
+  document.getElementById('itemsWrap').innerHTML =
+    `<div class="summary">${skeletonCards(4)}</div>`;
+
+  me = await getMe();
+  const editable = !!me;
+  document.getElementById('modeTag').textContent = editable
+    ? (isSuper() ? '负责人' : '编辑模式') : '公示模式';
+  document.getElementById('loginTip').style.display = editable ? 'none' : 'block';
+  document.getElementById('saveBar').style.display = editable ? 'flex' : 'none';
+  // 公示模式（顾客扫码）：责任人姓名照常展示，但备注属内部信息，不显示也不可编辑
+  document.getElementById('notesBox').style.display = editable ? 'block' : 'none';
+
+  // 检查负责人：可编辑时是输入框，公示模式下退化为只读文本块（同一个元素切类名，避免重复 DOM）
+  const insp = document.getElementById('inspector');
+  insp.readOnly = !editable;
+  insp.classList.toggle('text-input', editable);
+  insp.classList.toggle('cleaner-view', !editable);
+  insp.placeholder = editable ? '请输入负责人姓名' : '待补充';
+
+  state = await api(`/api/public/stores/${code}/records?form=${formCode}&date=${currentDate}`);
+  storeId = state.store_id;
+  document.getElementById('inspector').value = state.inspector_name || '';
+  document.getElementById('notes').value = state.notes || '';
+
+  if (state.exists) {
+    // 已正式保存的记录作为权威数据，清除可能残留的旧草稿
+    clearDraft();
+  } else if (editable) {
+    const draft = loadDraft();
+    if (draft) {
+      applyDraft(draft);
+      toast('已恢复未保存的草稿', 1400);
+    } else {
+      applyCurrentUserName();
+    }
+  }
+
+  renderItems();
+  updateProgress();
+  if (editable) saveDraft();
+}
+
+function renderItems() {
+  const wrap = document.getElementById('itemsWrap');
+  wrap.innerHTML = '';
+  state.items.forEach((it, idx) => {
+    const div = document.createElement('div');
+    div.className = 'check-item' + (it.is_done ? ' done' : '');
+    div.innerHTML = `
+      <div class="check-head">
+        <span class="check-no">${idx + 1}</span>
+        <span class="check-name">${it.name}</span>
+        <label class="switch">
+          <input type="checkbox" ${it.is_done ? 'checked' : ''} ${me ? '' : 'disabled'} data-idx="${idx}">
+          <span class="track"></span>
+        </label>
+      </div>
+      <div class="check-body">
+        <div class="field-label">清洁责任人</div>
+        ${me
+          ? `<input class="text-input cleaner" placeholder="填写责任人姓名" value="${escapeHtml(it.cleaner_name || '')}" data-idx="${idx}">`
+          : `<div class="cleaner-view">${it.cleaner_name ? escapeHtml(it.cleaner_name) : '待补充'}</div>`}
+        <div class="compare">
+          <div class="compare-col std-col" data-idx="${idx}"></div>
+          <div class="compare-col act-col" data-idx="${idx}"></div>
+        </div>
+      </div>`;
+    wrap.appendChild(div);
+  });
+
+  wrap.querySelectorAll('.switch input').forEach(cb => {
+    cb.onchange = e => {
+      const i = Number(e.target.dataset.idx);
+      state.items[i].is_done = e.target.checked ? 1 : 0;
+      e.target.closest('.check-item').classList.toggle('done', !!e.target.checked);
+      updateProgress();
+      saveDraft();
+    };
+  });
+  wrap.querySelectorAll('.cleaner').forEach(inp => {
+    inp.oninput = e => {
+      state.items[Number(e.target.dataset.idx)].cleaner_name = e.target.value;
+      saveDraft();
+    };
+  });
+  state.items.forEach((it, idx) => { renderStandard(idx); renderActual(idx); });
+}
+
+// ===== Fixed standard (super admin only can change) =====
+function renderStandard(idx) {
+  const col = document.querySelector(`.std-col[data-idx="${idx}"]`);
+  const it = state.items[idx];
+  let html = '<div class="compare-label std"><span class="dot"></span>标准示范</div>';
+  if (it.standard_photo_path) {
+    html += `<div class="std-thumb"><img src="/uploads/${it.standard_photo_path}" alt="标准">`;
+    if (isSuper()) html += '<button class="edit">更换</button>';
+    html += '</div>';
+  } else if (isSuper()) {
+    html += '<div class="std-add"><span class="plus">+</span><span>设置标准</span></div>';
+  } else {
+    html += '<div class="std-empty">标准待设置</div>';
+  }
+  if (it.standard_note) html += `<div class="std-note">${it.standard_note}</div>`;
+  if (isSuper()) html += '<div class="std-note" style="color:var(--warn);cursor:pointer;" data-note>编辑标准说明</div>';
+  col.innerHTML = html;
+
+  if (isSuper()) {
+    const trigger = col.querySelector('.std-add') || col.querySelector('.edit');
+    if (trigger) trigger.onclick = () => pickStandardFile(idx);
+    const noteBtn = col.querySelector('[data-note]');
+    if (noteBtn) noteBtn.onclick = () => editStandardNote(idx);
+  }
+}
+
+function pickStandardFile(idx) {
+  const file = document.createElement('input');
+  file.type = 'file';
+  file.accept = 'image/*';
+  file.onchange = () => uploadStandard(idx, file.files[0]);
+  file.click();
+}
+
+async function uploadStandard(idx, file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('photo', file);
+  fd.append('item_id', state.items[idx].item_id);
+  toast('上传中…', 1200);
+  try {
+    const data = await api('/api/admin/standard/photo', { method: 'POST', body: fd });
+    state.items[idx].standard_photo_path = data.filename;
+    renderStandard(idx);
+    toast('标准已更新', 1200);
+  } catch (e) { toast(e.message); }
+}
+
+async function editStandardNote(idx) {
+  const cur = state.items[idx].standard_note || '';
+  const v = prompt('请输入该点位的卫生标准说明（员工只读）', cur);
+  if (v === null) return;
+  try {
+    await api('/api/admin/standard/note', {
+      method: 'POST',
+      body: JSON.stringify({ item_id: state.items[idx].item_id, standard_note: v })
+    });
+    state.items[idx].standard_note = v;
+    renderStandard(idx);
+    toast('标准说明已保存', 1200);
+  } catch (e) { toast(e.message); }
+}
+
+// ===== Actual photo (any authenticated user) =====
+function renderActual(idx) {
+  const col = document.querySelector(`.act-col[data-idx="${idx}"]`);
+  const it = state.items[idx];
+  let html = '<div class="compare-label act"><span class="dot"></span>实际照片</div>';
+  if (it.photo_path) {
+    html += `<div class="std-thumb" style="border-color:color-mix(in srgb, var(--accent) 32%, transparent);background:var(--accent-weak);">
+      <img src="/uploads/${it.photo_path}" alt="实际">
+      ${me ? '<button class="edit" style="background:rgba(20,22,26,.62);">删除</button>' : ''}
+    </div>`;
+  } else if (me) {
+    html += '<div class="std-add" style="border-color:color-mix(in srgb, var(--accent) 40%, transparent);color:var(--accent);background:var(--surface-2);"><span class="plus">+</span><span>拍照/相册</span></div>';
+  } else {
+    html += '<div class="std-empty">未上传</div>';
+  }
+  col.innerHTML = html;
+
+  if (me) {
+    const del = col.querySelector('.edit');
+    if (del) del.onclick = async () => {
+      try {
+        await api('/api/admin/photo', { method: 'DELETE', body: JSON.stringify({ filename: it.photo_path }) });
+        it.photo_path = ''; renderActual(idx);
+        saveDraft();
+      } catch (e) { toast(e.message); }
+    };
+    const add = col.querySelector('.std-add');
+    if (add) add.onclick = () => {
+      const file = document.createElement('input');
+      file.type = 'file'; file.accept = 'image/*';
+      file.onchange = () => uploadActual(idx, file.files[0]);
+      file.click();
+    };
+  }
+}
+
+async function uploadActual(idx, file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('photo', file);
+  toast('上传中…', 1200);
+  try {
+    const data = await api('/api/admin/upload', { method: 'POST', body: fd });
+    state.items[idx].photo_path = data.filename;
+    renderActual(idx);
+    saveDraft();
+    toast('上传成功', 1200);
+  } catch (e) { toast(e.message); }
+}
+
+function updateProgress() {
+  const total = state.items.length;
+  const done = state.items.filter(i => i.is_done).length;
+  document.getElementById('progressText').textContent = `${done} / ${total}`;
+  document.getElementById('progressFill').style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+}
+
+document.getElementById('saveBtn').onclick = async (ev) => {
+  const btn = ev.currentTarget;
+  const inspector = document.getElementById('inspector').value.trim();
+  const notes = document.getElementById('notes').value.trim();
+  if (!inspector) { toast('请填写检查负责人'); document.getElementById('inspector').focus(); return; }
+  const body = {
+    store_id: storeId, form_code: formCode, record_date: currentDate,
+    inspector_name: inspector, notes,
+    items: state.items.map(i => ({
+      item_id: i.item_id, is_done: i.is_done,
+      cleaner_name: i.cleaner_name, photo_path: i.photo_path
+    }))
+  };
+  // 加载态自动禁用，避免连点重复提交
+  await withLoading(btn, async () => {
+    try {
+      await api('/api/admin/records', { method: 'POST', body: JSON.stringify(body) });
+      clearDraft();
+      toast('已保存');
+      setTimeout(goBack, 700);
+    } catch (e) { toast(e.message); }
+  });
+};
+
+load();
+</script>
+</body>
+</html>

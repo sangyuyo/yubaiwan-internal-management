@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>于百万·QSC管理系统 · 管理看板</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app" style="padding-bottom:24px;">
+  <div class="topbar">
+    <a class="back" id="homeBtn">‹</a>
+    <div class="tt">QSC 管理看板</div>
+    <span class="mode" id="who"></span>
+  </div>
+
+  <div class="date-bar">
+    <button class="nav-date" id="prevDay">‹</button>
+    <input type="date" id="dateInput">
+    <button class="nav-date" id="nextDay">›</button>
+  </div>
+
+  <div class="dash-summary">
+    <div class="dash-stat total"><div class="num" id="statStores">0</div><div class="lbl">门店</div></div>
+    <div class="dash-stat ok"><div class="num" id="statFull">0</div><div class="lbl">已完成</div></div>
+    <div class="dash-stat warn"><div class="num" id="statMiss">0</div><div class="lbl">待提交</div></div>
+  </div>
+
+  <div id="storeWrap"></div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+let me = null;
+let currentDate = todayStr();
+const formOrder = ['daily', 'weekly', 'monthly'];
+
+document.getElementById('dateInput').value = currentDate;
+document.getElementById('dateInput').onchange = e => { currentDate = e.target.value; load(); };
+document.getElementById('prevDay').onclick = () => { currentDate = shiftDate(currentDate, -1); document.getElementById('dateInput').value = currentDate; load(); };
+document.getElementById('nextDay').onclick = () => { currentDate = shiftDate(currentDate, 1); document.getElementById('dateInput').value = currentDate; load(); };
+document.getElementById('homeBtn').onclick = () => location.href = '/';
+
+async function load() {
+  me = await getMe();
+  if (!me) { location.href = '/login.html'; return; }
+  document.getElementById('who').textContent = me.role === 'super_admin' ? '项目负责人' : '门店管理';
+  const data = await api(`/api/admin/dashboard?date=${currentDate}`);
+  render(data);
+}
+
+function pillClass(s) {
+  if (!s.submitted) return 'miss';
+  if (s.rate === 100) return 'full';
+  return 'partial';
+}
+function pillText(s) {
+  if (!s.submitted) return '未提交';
+  if (s.rate === 100) return '已完成';
+  return `${s.rate}%`;
+}
+
+function render(data) {
+  let fullCount = 0, missCount = 0;
+  const wrap = document.getElementById('storeWrap');
+  wrap.innerHTML = '';
+
+  data.forEach(st => {
+    const card = document.createElement('div');
+    card.className = 'dash-store';
+    let rowsHtml = '';
+    formOrder.forEach(fc => {
+      const s = st.forms[fc];
+      if (!s.submitted) missCount++;
+      else if (s.rate === 100) fullCount++;
+      rowsHtml += `
+        <div class="dash-row" data-store="${st.code}" data-form="${fc}">
+          <div class="left">
+            <span class="tag" style="background:${s.btn_color}"></span>
+            <div>
+              <div class="fname">${s.name}</div>
+              <div class="meta">${s.submitted ? ('负责人 ' + (s.inspector || '—') + ' · ' + fmtTime(s.updated_at)) : '当日暂无记录'}</div>
+            </div>
+          </div>
+          <span class="dash-pill ${pillClass(s)}">${pillText(s)}</span>
+        </div>`;
+    });
+    card.innerHTML = `
+      <div class="dash-store-head">
+        <div class="dash-store-name">${st.name}
+          <span class="gcount">照片墙 ${st.gallery_count} 张</span>
+        </div>
+      </div>${rowsHtml}`;
+    wrap.appendChild(card);
+
+    card.querySelectorAll('.dash-row').forEach(row => {
+      row.onclick = () => {
+        location.href = `/form.html?code=${row.dataset.store}&form=${row.dataset.form}&date=${currentDate}`;
+      };
+    });
+  });
+
+  document.getElementById('statStores').textContent = data.length;
+  document.getElementById('statFull').textContent = fullCount;
+  document.getElementById('statMiss').textContent = missCount;
+}
+
+load();
+</script>
+</body>
+</html>

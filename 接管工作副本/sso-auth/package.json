@@ -1,0 +1,20 @@
+{
+  "name": "sso-auth",
+  "version": "1.0.0",
+  "private": true,
+  "description": "于百万 · 统一身份认证服务（SSO）：唯一账号源，供所有业务工具校验身份；账号统一管理，业务工具各自独立登录",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "migrate": "node scripts/migrate.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.19.2"
+  }
+}

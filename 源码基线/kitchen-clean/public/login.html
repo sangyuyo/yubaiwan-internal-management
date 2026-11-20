@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>于百万·QSC管理系统 · 登录</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-logo">
+      <span class="ico">厨</span>
+      <h2>管理员登录</h2>
+      <p>于百万·QSC管理系统</p>
+    </div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">账号</label>
+        <input class="text-input" type="text" id="username" autocomplete="username" placeholder="请输入账号">
+      </div>
+      <div class="form-group">
+        <label for="password">密码</label>
+        <input class="text-input" type="password" id="password" autocomplete="current-password" placeholder="请输入密码">
+      </div>
+      <button type="submit" class="btn btn-block" >登录</button>
+    </form>
+    <div class="muted login-links"><a href="/">返回首页</a><a class="primary" href="https://sangyu.work/">← 返回工作台</a></div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      if (!username || !password) { toast('请输入账号和密码'); return; }
+      try {
+        await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+        window.location.href = '/dashboard.html';
+      } catch (err) {
+        toast(err.message);
+      }
+    });
+  </script>
+</body>
+</html>

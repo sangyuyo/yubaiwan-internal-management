@@ -1,0 +1,197 @@
+[
+  {
+    "path": "portal/package.json",
+    "sha256": "e208d9fed21fbf05bef3152def49ed51a81be4c85fd52c3acc5d7aa6623cf5c8",
+    "originalSha256": "e208d9fed21fbf05bef3152def49ed51a81be4c85fd52c3acc5d7aa6623cf5c8"
+  },
+  {
+    "path": "portal/package-lock.json",
+    "sha256": "43d04bf8d2cce6616a683d47df134e61e5762752af7b6a958ed68e7dc00e1c19",
+    "originalSha256": "43d04bf8d2cce6616a683d47df134e61e5762752af7b6a958ed68e7dc00e1c19"
+  },
+  {
+    "path": "portal/server.js",
+    "sha256": "389431abf829b713117b876f9721d91757804c92f04b6e36104c67420b6fc21d",
+    "originalSha256": "389431abf829b713117b876f9721d91757804c92f04b6e36104c67420b6fc21d"
+  },
+  {
+    "path": "portal/ybw-core.js",
+    "sha256": "344c1ae369dd96fe0d186ce493c653e954f8056824414e21a86ae47452054864",
+    "originalSha256": "344c1ae369dd96fe0d186ce493c653e954f8056824414e21a86ae47452054864"
+  },
+  {
+    "path": "portal/public/account.html",
+    "sha256": "c8d422aa8879a4f59c10043fd20c882f0b9bf27666dcf30059a5995ea18478ea",
+    "originalSha256": "c8d422aa8879a4f59c10043fd20c882f0b9bf27666dcf30059a5995ea18478ea"
+  },
+  {
+    "path": "portal/public/index.html",
+    "sha256": "17f4e37a68c95110325197014463cca54cb69aa3d4d7c1445aca7a3f64939d66",
+    "originalSha256": "17f4e37a68c95110325197014463cca54cb69aa3d4d7c1445aca7a3f64939d66"
+  },
+  {
+    "path": "portal/public/css/base.css",
+    "sha256": "0cfc644531f5e04d1881e629348951f6d9690acaccede54dff630a200eb5a1f2",
+    "originalSha256": "0cfc644531f5e04d1881e629348951f6d9690acaccede54dff630a200eb5a1f2"
+  },
+  {
+    "path": "portal/public/css/app.css",
+    "sha256": "ceeae85ef058213fe7ad64702811a6f502e7ab52b2cc8d17d514daf26a00ae82",
+    "originalSha256": "ceeae85ef058213fe7ad64702811a6f502e7ab52b2cc8d17d514daf26a00ae82"
+  },
+  {
+    "path": "sso-auth/package.json",
+    "sha256": "08c2627f8e7e86a00b053e3393e900e088f42f993df507e480d26522dbb3137d",
+    "originalSha256": "08c2627f8e7e86a00b053e3393e900e088f42f993df507e480d26522dbb3137d"
+  },
+  {
+    "path": "sso-auth/package-lock.json",
+    "sha256": "fac696003ce4ee5f0908625234aa5180ddd8fe78099d7ea607a4049cfc4654d2",
+    "originalSha256": "fac696003ce4ee5f0908625234aa5180ddd8fe78099d7ea607a4049cfc4654d2"
+  },
+  {
+    "path": "sso-auth/server.js",
+    "sha256": "190f5443c2a43f376c6fd28f88b18a3c47d7213b226124f30a5e46bd66dbaed4",
+    "originalSha256": "190f5443c2a43f376c6fd28f88b18a3c47d7213b226124f30a5e46bd66dbaed4"
+  },
+  {
+    "path": "sso-auth/db.js",
+    "sha256": "319106083babc0b071941205c069430b418b3cf67343257421d148ad0d0f5105",
+    "originalSha256": "319106083babc0b071941205c069430b418b3cf67343257421d148ad0d0f5105"
+  },
+  {
+    "path": "sso-auth/ybw-core.js",
+    "sha256": "344c1ae369dd96fe0d186ce493c653e954f8056824414e21a86ae47452054864",
+    "originalSha256": "344c1ae369dd96fe0d186ce493c653e954f8056824414e21a86ae47452054864"
+  },
+  {
+    "path": "sso-auth/scripts/migrate.js",
+    "sha256": "32543c4ec2f429c542bbada3ae1dbf1ca4934e0ae71996b82dd1c24874a102a7",
+    "originalSha256": "32543c4ec2f429c542bbada3ae1dbf1ca4934e0ae71996b82dd1c24874a102a7"
+  },
+  {
+    "path": "shop-performance/package.json",
+    "sha256": "1e9ff8b6f8893b9fe90b37b0c7cf316bd1cc3b016fa3a09166f19e772dbd39ff",
+    "originalSha256": "1e9ff8b6f8893b9fe90b37b0c7cf316bd1cc3b016fa3a09166f19e772dbd39ff"
+  },
+  {
+    "path": "shop-performance/package-lock.json",
+    "sha256": "9e791cf7a450d620c24caf6d61f09ce57e002b7e7ea61e2367a3eb7a862e55b4",
+    "originalSha256": "9e791cf7a450d620c24caf6d61f09ce57e002b7e7ea61e2367a3eb7a862e55b4"
+  },
+  {
+    "path": "shop-performance/server.js",
+    "sha256": "06cb03afa799a19b7a34d31e9ffd0d2db8ce2bbbc25b9c8fa931c17463cd18aa",
+    "originalSha256": "06cb03afa799a19b7a34d31e9ffd0d2db8ce2bbbc25b9c8fa931c17463cd18aa"
+  },
+  {
+    "path": "shop-performance/db.js",
+    "sha256": "04e894d5393612eb3226a8e0ac01f15725e4dc694c757067ddcc489d7fed0bbf",
+    "originalSha256": "04e894d5393612eb3226a8e0ac01f15725e4dc694c757067ddcc489d7fed0bbf"
+  },
+  {
+    "path": "shop-performance/ybw-core.js",
+    "sha256": "344c1ae369dd96fe0d186ce493c653e954f8056824414e21a86ae47452054864",
+    "originalSha256": "344c1ae369dd96fe0d186ce493c653e954f8056824414e21a86ae47452054864"
+  },
+  {
+    "path": "shop-performance/parsers/meituan_guandian.js",
+    "sha256": "8e611bdd699861fe728c62efe746a5ae8d0f564d47e3f17fd5cee2efd795b2a1",
+    "originalSha256": "8e611bdd699861fe728c62efe746a5ae8d0f564d47e3f17fd5cee2efd795b2a1"
+  },
+  {
+    "path": "shop-performance/public/index.html",
+    "sha256": "97b8d1cbf0caae15f870fbcc9ac54c0cc8b2a32c5716bf2f7d60a7de42dd520d",
+    "originalSha256": "97b8d1cbf0caae15f870fbcc9ac54c0cc8b2a32c5716bf2f7d60a7de42dd520d"
+  },
+  {
+    "path": "shop-performance/public/css/base.css",
+    "sha256": "0cfc644531f5e04d1881e629348951f6d9690acaccede54dff630a200eb5a1f2",
+    "originalSha256": "0cfc644531f5e04d1881e629348951f6d9690acaccede54dff630a200eb5a1f2"
+  },
+  {
+    "path": "shop-performance/public/css/app.css",
+    "sha256": "e7cb7e87f5fd8a8feba7a7d71f2f6a2217d0c518932ebcd2baf30e8caf871968",
+    "originalSha256": "e7cb7e87f5fd8a8feba7a7d71f2f6a2217d0c518932ebcd2baf30e8caf871968"
+  },
+  {
+    "path": "shop-performance/public/vendor/html2canvas.min.js",
+    "sha256": "e87e550794322e574a1fda0c1549a3c70dae5a93d9113417a429016838eab8cb",
+    "originalSha256": "e87e550794322e574a1fda0c1549a3c70dae5a93d9113417a429016838eab8cb"
+  },
+  {
+    "path": "kitchen-clean/package.json",
+    "sha256": "b2bd5191884c8fdfc1c69b03cb48b1ef4bea7828f75ff2b7d5430b1751b775f0",
+    "originalSha256": "b2bd5191884c8fdfc1c69b03cb48b1ef4bea7828f75ff2b7d5430b1751b775f0"
+  },
+  {
+    "path": "kitchen-clean/package-lock.json",
+    "sha256": "fc7f3e8936fd705eb0b99b132ff2538c16119701762fe46fcd48e306584985fa",
+    "originalSha256": "fc7f3e8936fd705eb0b99b132ff2538c16119701762fe46fcd48e306584985fa"
+  },
+  {
+    "path": "kitchen-clean/server.js",
+    "sha256": "f369ed3aa5ab7733522ea183bb1a603020905d04bc05f920aefba424bc76a52e",
+    "originalSha256": "f369ed3aa5ab7733522ea183bb1a603020905d04bc05f920aefba424bc76a52e"
+  },
+  {
+    "path": "kitchen-clean/db.js",
+    "sha256": "1139a18bcc8028dc2a5e96c313c2c6ea55bd172157701aa5aeeb2a638e4adf59",
+    "originalSha256": "76bcee7fdec4f8f1f1b51e943cde9708b4818d6823da8941be74815c66967291"
+  },
+  {
+    "path": "kitchen-clean/ybw-core.js",
+    "sha256": "344c1ae369dd96fe0d186ce493c653e954f8056824414e21a86ae47452054864",
+    "originalSha256": "344c1ae369dd96fe0d186ce493c653e954f8056824414e21a86ae47452054864"
+  },
+  {
+    "path": "kitchen-clean/public/index.html",
+    "sha256": "7f91569bdbec3833c6787f2ea3ef1f2ea6b85e8d7fa02256ce5af1cfababa401",
+    "originalSha256": "7f91569bdbec3833c6787f2ea3ef1f2ea6b85e8d7fa02256ce5af1cfababa401"
+  },
+  {
+    "path": "kitchen-clean/public/login.html",
+    "sha256": "5409cfea72b77c37e99a228d569717b6b7e8e31807f956d395bd5d77991a83ba",
+    "originalSha256": "5409cfea72b77c37e99a228d569717b6b7e8e31807f956d395bd5d77991a83ba"
+  },
+  {
+    "path": "kitchen-clean/public/form.html",
+    "sha256": "846bf2c8845893f57460b527e1d532538a6ca1e8a9db55faf1a10dd387f5fd0d",
+    "originalSha256": "846bf2c8845893f57460b527e1d532538a6ca1e8a9db55faf1a10dd387f5fd0d"
+  },
+  {
+    "path": "kitchen-clean/public/gallery.html",
+    "sha256": "bf8fd19eb1747a5a9af526950757b288fcc66827ac26a32638947524adf28f83",
+    "originalSha256": "bf8fd19eb1747a5a9af526950757b288fcc66827ac26a32638947524adf28f83"
+  },
+  {
+    "path": "kitchen-clean/public/dashboard.html",
+    "sha256": "8bab13755db9ae7e8dfd1f061be1aea8f51f2ea2740c276d14299a28afe6be7f",
+    "originalSha256": "8bab13755db9ae7e8dfd1f061be1aea8f51f2ea2740c276d14299a28afe6be7f"
+  },
+  {
+    "path": "kitchen-clean/public/portal.html",
+    "sha256": "10eeabc1624a8f968ef32c56734b13923bd5d1d76260112d6e74c3cd7ed93dad",
+    "originalSha256": "10eeabc1624a8f968ef32c56734b13923bd5d1d76260112d6e74c3cd7ed93dad"
+  },
+  {
+    "path": "kitchen-clean/public/users.html",
+    "sha256": "67b4fb11a38219d19746ddf05d2fe8e24476a44dc0eff70424fc807683919176",
+    "originalSha256": "67b4fb11a38219d19746ddf05d2fe8e24476a44dc0eff70424fc807683919176"
+  },
+  {
+    "path": "kitchen-clean/public/js/common.js",
+    "sha256": "820b82a389dc1e75f304e48c05023d7906ffbfa6fffdef64cbbbaf90e10853b7",
+    "originalSha256": "820b82a389dc1e75f304e48c05023d7906ffbfa6fffdef64cbbbaf90e10853b7"
+  },
+  {
+    "path": "kitchen-clean/public/css/base.css",
+    "sha256": "0cfc644531f5e04d1881e629348951f6d9690acaccede54dff630a200eb5a1f2",
+    "originalSha256": "0cfc644531f5e04d1881e629348951f6d9690acaccede54dff630a200eb5a1f2"
+  },
+  {
+    "path": "kitchen-clean/public/css/style.css",
+    "sha256": "cd7f977d0c2ddcc63bd23925404a48a8decf6a7d8f5390dd4cf74e94e6edf36a",
+    "originalSha256": "cd7f977d0c2ddcc63bd23925404a48a8decf6a7d8f5390dd4cf74e94e6edf36a"
+  }
+]

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>于百万·QSC管理系统 · 门店</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <h1 class="header-title">
+      门店卫生公示
+      <span class="store-name" id="storeName">加载中…</span>
+    </h1>
+    <div class="banner-wrap">
+      <img class="banner" id="bannerImg" src="" alt="于百万">
+    </div>
+  </header>
+
+  <!-- 照片模块状态 -->
+  <section class="section" id="photoCard" style="display:none;">
+    <div class="status-row" id="photoRow"></div>
+  </section>
+
+  <!-- 清洁记录 -->
+  <section class="section">
+    <div class="section-head">清洁记录</div>
+    <div id="formList">
+      <div class="ui-skeleton" style="height:14px;max-width:58%;margin:14px 0;"></div>
+      <div class="ui-skeleton" style="height:14px;max-width:44%;margin:14px 0;"></div>
+      <div class="ui-skeleton" style="height:14px;max-width:52%;margin:14px 0;"></div>
+    </div>
+  </section>
+
+  <a class="admin-link" href="/login.html" id="adminEntry">管理登录</a>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+// ===== 顶部 Banner：立即加载最新图（不等门店接口，避免先显示旧 Banner） =====
+(function () {
+  const img = document.getElementById('bannerImg');
+  (async () => {
+    try {
+      const b = await api('/api/public/banner');
+      if (b && b.url) img.src = b.url;
+    } catch (e) { /* 保留占位底色 */ }
+  })();
+})();
+
+(async function () {
+  const code = getCodeFromPath();
+  if (!code) { toast('门店链接错误'); return; }
+
+  const formList = document.getElementById('formList');
+  let store, portal;
+  try {
+    [store, portal] = await Promise.all([
+      api(`/api/public/stores/${code}`),
+      api(`/api/public/stores/${code}/portal`),
+    ]);
+  } catch (e) {
+    formList.innerHTML = `
+      <div class="empty">
+        门店信息加载失败<br>
+        <span style="font-size:12px;">${escapeHtml(e.message)}</span>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('storeName').textContent = store.name;
+  document.title = `${store.name} · 卫生公示`;
+
+  const loggedIn = await isLoggedIn();
+  const photoTpl = portal.find(t => t.code === 'photos');
+  const otherTpls = portal.filter(t => t.code !== 'photos');
+
+  // 照片模块状态卡
+  if (photoTpl) {
+    const card = document.getElementById('photoCard');
+    const done = !!photoTpl.today_done;
+    card.style.display = 'block';
+    document.getElementById('photoRow').innerHTML = `
+      <div>
+        <span class="status-label">卫生照片</span>
+        <span class="badge ${done ? 'done' : 'pending'}">${done ? '今日已更新' : '今日待上传'}</span>
+      </div>
+      <div class="status-time" id="goGallery">
+        ${photoTpl.latest_update ? fmtTime(photoTpl.latest_update) + ' 更新' : '查看'}
+        <span class="arrow">›</span>
+      </div>`;
+    document.getElementById('goGallery').onclick = () => {
+      location.href = `/gallery.html?code=${code}`;
+    };
+  }
+
+  // 清洁记录卡片
+  if (!otherTpls.length) {
+    formList.innerHTML = '<div class="empty">该门店暂未配置清洁表单</div>';
+    return;
+  }
+
+  formList.innerHTML = otherTpls.map(tpl => {
+    const done = !!tpl.today_done;
+    // 身份色通过 CSS 变量传入，暗色模式下由样式层自动收敛亮度
+    return `
+      <div class="form-card" style="--card-accent:${escapeHtml(tpl.btn_color || '')};--btn:${escapeHtml(tpl.btn_color || '')};">
+        <div class="info">
+          <div class="title">${escapeHtml(tpl.name)}</div>
+          <div class="desc">${escapeHtml(tpl.description || '')}</div>
+          <div class="meta">
+            <span class="badge ${done ? 'done' : 'pending'}" style="margin-left:0;">${done ? '今日已提交' : '今日待提交'}</span>
+            <span style="margin-left:6px;">
+              ${tpl.latest_update ? '最近 ' + fmtTime(tpl.latest_update) : '暂无记录'}${tpl.latest_inspector ? ' · 负责人 ' + escapeHtml(tpl.latest_inspector) : ''}
+            </span>
+          </div>
+        </div>
+        <button class="btn" type="button">${loggedIn ? '填写' : '查看'}</button>
+      </div>`;
+  }).join('');
+
+  formList.querySelectorAll('.form-card').forEach((card, i) => {
+    card.querySelector('.btn').onclick = () => {
+      const tpl = otherTpls[i];
+      location.href = `/form.html?code=${code}&form=${tpl.code}&date=${todayStr()}`;
+    };
+  });
+
+  const entry = document.getElementById('adminEntry');
+  if (loggedIn) entry.textContent = '管理后台';
+})();
+</script>
+</body>
+</html>

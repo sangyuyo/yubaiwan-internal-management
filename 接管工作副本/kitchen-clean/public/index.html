@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>于百万·QSC管理系统</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="wb-bar"><a class="wb-back" href="https://sangyu.work/">← 返回工作台</a><span class="wb-hint">YUBW · QSC</span></div>
+  <div class="header">
+    <div class="header-title">于百万·QSC管理系统</div>
+    <div class="banner-wrap">
+      <img class="banner" id="bannerImg" src="" alt="于百万">
+      <button class="banner-edit" id="bannerEdit" style="display:none">更换图片</button>
+      <input type="file" id="bannerFile" accept="image/jpeg,image/png,image/webp" style="display:none">
+    </div>
+  </div>
+
+  <div class="section" id="navSection">
+    <div class="section-head">工作台</div>
+    <div id="navBody"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">门店门户</div>
+    <div id="storeList"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">标准化文件 SOP
+      <button class="sop-add" id="sopAddBtn" style="display:none">上传文件</button>
+    </div>
+    <div id="sopList"></div>
+    <input type="file" id="sopFile" accept=".pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx" style="display:none">
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+// ===== 顶部 Banner：立即加载最新图，不等登录态，避免首屏先显示旧 Banner =====
+const bannerImg = document.getElementById('bannerImg');
+const bannerEdit = document.getElementById('bannerEdit');
+const bannerFile = document.getElementById('bannerFile');
+async function loadBanner() {
+  try {
+    const b = await api('/api/public/banner');
+    if (b && b.url) bannerImg.src = b.url;
+  } catch (e) { /* 保留占位背景 */ }
+}
+loadBanner();
+
+(async function () {
+  const me = await getMe();
+  const navBody = document.getElementById('navBody');
+
+  if (me && me.role === 'super_admin') {
+    bannerEdit.style.display = 'inline-block';
+    bannerEdit.onclick = () => bannerFile.click();
+    bannerFile.onchange = async () => {
+      if (!bannerFile.files[0]) return;
+      const fd = new FormData();
+      fd.append('photo', bannerFile.files[0]);
+      try {
+        await api('/api/admin/banner', { method: 'POST', body: fd });
+        toast('Banner 已更新');
+        loadBanner();
+      } catch (e) { toast(e.message); }
+      bannerFile.value = '';
+    };
+  }
+
+  if (!me) {
+    navBody.innerHTML = '<button class="btn btn-block"  id="goLogin">登录后填报与查看</button>';
+    document.getElementById('goLogin').onclick = () => location.href = '/login.html';
+  } else {
+    let navHtml = '<button class="btn btn-block" style="background:var(--accent);margin-bottom:10px;" id="goDash">QSC 管理看板</button>';
+    if (me.role === 'super_admin') {
+      navHtml += '<button class="btn btn-ghost btn-block" style="margin-bottom:10px;" id="goUsers">账号与权限管理</button>';
+    }
+    navHtml += '<button class="btn btn-ghost btn-block" id="logoutBtn">退出登录</button>';
+    navBody.innerHTML = navHtml;
+    document.getElementById('goDash').onclick = () => location.href = '/dashboard.html';
+    if (me.role === 'super_admin') {
+      document.getElementById('goUsers').onclick = () => location.href = '/users.html';
+    }
+    document.getElementById('logoutBtn').onclick = async () => {
+      await api('/api/auth/logout', { method: 'POST' });
+      location.reload();
+    };
+  }
+
+  // ===== 门店门户（萨莉亚风格卡片） =====
+  let stores = [];
+  if (me) {
+    stores = await api('/api/admin/stores');
+  } else {
+    stores = await api('/api/public/stores');
+  }
+
+  const list = document.getElementById('storeList');
+  if (!stores.length) {
+    list.innerHTML = '<div class="empty">暂无可访问门店</div>';
+  } else {
+    stores.forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'store-card';
+      card.innerHTML = `
+        <div class="info">
+          <div class="title">${escapeHtml(s.name)}</div>
+          <div class="desc">查看清洁公示与管理记录</div>
+        </div>
+        <button class="btn enter-btn">进入</button>`;
+      card.querySelector('.btn').onclick = () => location.href = `/s/${s.code}`;
+      list.appendChild(card);
+    });
+  }
+
+  // ===== 标准化文件 SOP：项目负责人可上传/删除，其他账号查看/下载 =====
+  const sopAddBtn = document.getElementById('sopAddBtn');
+  const sopFile = document.getElementById('sopFile');
+  if (me && me.role === 'super_admin') {
+    sopAddBtn.style.display = 'inline-block';
+    sopAddBtn.onclick = () => sopFile.click();
+    sopFile.onchange = async () => {
+      if (!sopFile.files[0]) return;
+      const fd = new FormData();
+      fd.append('file', sopFile.files[0]);
+      try {
+        await api('/api/admin/sop', { method: 'POST', body: fd });
+        toast('SOP 文件已上传');
+        loadSop();
+      } catch (e) { toast(e.message); }
+      sopFile.value = '';
+    };
+  }
+
+  const sopList = document.getElementById('sopList');
+  async function loadSop() {
+    let rows = [];
+    try { rows = await api('/api/public/sop'); } catch (e) {}
+    if (!rows.length) {
+      sopList.innerHTML = '<div class="empty small">暂无标准化文件，等待项目负责人上传</div>';
+      return;
+    }
+    sopList.innerHTML = rows.map(r => {
+      const ext = (r.orig_name.split('.').pop() || '').toLowerCase();
+      const viewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+      const canDel = me && me.role === 'super_admin';
+      return `
+      <div class="sop-item">
+        <div class="sop-info">
+          <div class="sop-name">${escapeHtml(r.orig_name)}</div>
+          <div class="sop-meta">${fmtSize(r.size)}${r.uploaded_at ? ' · ' + escapeHtml(r.uploaded_at) : ''}</div>
+        </div>
+        <div class="sop-actions">
+          ${viewable ? `<a class="mini" href="/sop/${encodeURIComponent(r.filename)}" target="_blank">查看</a>` : ''}
+          <a class="mini" href="/sop/${encodeURIComponent(r.filename)}" download>下载</a>
+          ${canDel ? `<button class="mini danger" data-id="${r.id}">删除</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    if (me && me.role === 'super_admin') {
+      sopList.querySelectorAll('.mini.danger').forEach(btn => {
+        btn.onclick = async () => {
+          if (!confirm('确定删除该标准化文件？')) return;
+          try {
+            await api('/api/admin/sop/' + btn.dataset.id, { method: 'DELETE' });
+            toast('已删除');
+            loadSop();
+          } catch (e) { toast(e.message); }
+        };
+      });
+    }
+  }
+  loadSop();
+})();
+</script>
+</body>
+</html>

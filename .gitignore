@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.backup-local/
+.deploy/
+data/
+uploads/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.pem
+*.key
+*.log
+__pycache__/
